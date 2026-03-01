@@ -63,7 +63,7 @@ export function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex flex-col items-center justify-center px-6 py-12 bg-gradient-to-br from-[#E6E6FA] via-[#FFDAB9] to-[#B0E0E6] dark:from-[#0c0a14] dark:via-[#14100c] dark:to-[#0a0e14]"
+    <div className="min-h-screen relative overflow-hidden flex flex-col items-center justify-center px-6 py-12 bg-gradient-to-br from-[#F5E6FA] via-[#E8F5E9] to-[#FCE4EC] dark:from-[#0c0a14] dark:via-[#0a140e] dark:to-[#140a0e]"
     >
       {/* Floating 3D Abstract Shapes */}
       <div className="absolute top-10 left-6 w-28 h-28 rounded-[2rem] bg-pastel-peach/60 dark:bg-orange-900/20 shadow-clay-sm dark:shadow-none animate-float rotate-12 blur-[1px]" />

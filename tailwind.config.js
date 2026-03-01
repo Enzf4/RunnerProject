@@ -16,6 +16,20 @@ export default {
             'clay-inset': 'inset 10px 10px 20px #b0b5bd, inset -10px -10px 20px #ffffff',
             'clay-dark': '10px 10px 20px #0a0a0b, -10px -10px 20px #1c1c1f',
         },
+        keyframes: {
+            marquee: {
+                from: { transform: 'translateX(0)' },
+                to: { transform: 'translateX(calc(-100% - var(--gap)))' },
+            },
+            'marquee-vertical': {
+                from: { transform: 'translateY(0)' },
+                to: { transform: 'translateY(calc(-100% - var(--gap)))' },
+            },
+        },
+        animation: {
+            marquee: 'marquee var(--duration) infinite linear',
+            'marquee-vertical': 'marquee-vertical var(--duration) linear infinite',
+        },
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
