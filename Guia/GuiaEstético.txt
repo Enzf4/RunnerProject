@@ -1,0 +1,5 @@
+Mobile app UI design, Bento Grid layout, Claymorphism style 3D abstract shapes, soft matte texture, heavy rounded corners, pastel color palette (lavender, peach, light blue), floating black bottom navigation bar, geometric sans-serif typography, high contrast, clean and playful aestheti. 
+
+Using Magic UI components. 
+
+Using Lucide React Icons.

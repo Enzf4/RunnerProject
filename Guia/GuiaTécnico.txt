@@ -1,0 +1,342 @@
+Perfeito, Enzo.
+Vou montar isso como se fosse um **documento oficial de arquitetura do projeto (MVP atual)** — objetivo, domínio, regras de negócio, arquitetura técnica e fluxos.
+
+---
+
+# 🏃 Plataforma de Clubes de Corrida
+
+## Guia Técnico e Funcional (MVP Atual)
+
+---
+
+# 1️⃣ Visão Geral do Projeto
+
+## 📌 Objetivo
+
+O projeto é uma **plataforma web para criação e gerenciamento de clubes de corrida**, permitindo que usuários:
+
+* Criem conta
+* Configurem seu perfil de corredor
+* Criem clubes
+* Administrem clubes
+* Gerenciem imagens (foto de perfil e logo do clube)
+
+O backend é construído sobre a plataforma **Supabase**, utilizando:
+
+* Auth (JWT automático)
+* PostgreSQL
+* Row Level Security (RLS)
+* Storage
+
+---
+
+# 2️⃣ Escopo do MVP (Features Atuais)
+
+## ✔ Autenticação de usuários
+
+* Cadastro
+* Login
+* Recuperação de senha
+
+## ✔ Perfil de usuário
+
+* Nome
+* Foto
+* Pace médio
+* Cidade
+
+## ✔ Clubes de corrida
+
+* Criação de clube
+* Edição de clube
+* Definição de administrador
+* Upload de logo
+
+## ✔ Upload de imagens
+
+* Foto de perfil
+* Logo de clube
+
+---
+
+# 3️⃣ Modelo de Domínio
+
+## Entidade: Usuário (Auth)
+
+Gerenciada internamente pelo Supabase (`auth.users`).
+
+### Responsabilidades:
+
+* Autenticação
+* Geração de JWT
+* Sessão
+
+---
+
+## Entidade: Profile (`profiles`)
+
+Representa o corredor.
+
+### Colunas:
+
+| Campo      | Tipo   | Descrição              |
+| ---------- | ------ | ---------------------- |
+| id         | UUID   | Mesmo ID do auth.users |
+| name       | string | Nome do corredor       |
+| photo_url  | string | URL da foto no Storage |
+| pace_medio | string | Pace médio (ex: 05:30) |
+| cidade     | string | Cidade do usuário      |
+
+### Regra:
+
+* Todo usuário autenticado possui exatamente um profile.
+* Criado automaticamente via trigger após cadastro.
+
+---
+
+## Entidade: Club (`clubs`)
+
+Representa um clube de corrida.
+
+### Colunas:
+
+| Campo       | Tipo      | Descrição              |
+| ----------- | --------- | ---------------------- |
+| id          | UUID      | Identificador do clube |
+| admin_id    | UUID      | Dono do clube          |
+| name        | string    | Nome do clube          |
+| description | string    | Descrição              |
+| regras      | string    | Regras internas        |
+| logo_url    | string    | URL da logo            |
+| created_at  | timestamp | Data de criação        |
+
+### Regra:
+
+* Cada clube possui um único administrador.
+* Apenas o admin pode editar o clube.
+
+---
+
+# 4️⃣ Regras de Negócio
+
+## 4.1 Autenticação
+
+* Apenas usuários autenticados podem acessar dados protegidos.
+* Supabase gera e gerencia JWT automaticamente.
+* Sessão persistida no client.
+
+---
+
+## 4.2 Perfis
+
+* Um usuário só pode editar o próprio perfil.
+* O ID do profile deve ser igual ao `auth.uid()`.
+
+Implementado via RLS.
+
+---
+
+## 4.3 Clubes
+
+* Um usuário pode criar clubes.
+* O criador deve ser o `admin_id`.
+* Apenas o `admin_id` pode editar o clube.
+* A logo deve estar armazenada na pasta com o ID do clube.
+
+---
+
+## 4.4 Storage
+
+Fluxo obrigatório:
+
+1. Upload do arquivo
+2. Geração de URL pública
+3. Atualização da tabela com essa URL
+
+---
+
+# 5️⃣ Arquitetura Técnica
+
+## Stack
+
+* Frontend: React
+* Backend: Supabase
+* Banco: PostgreSQL
+* Storage: Supabase Storage
+* Autenticação: Supabase Auth (JWT)
+
+---
+
+## Diagrama Conceitual
+
+```
+[ React App ]
+       ↓
+[ Supabase SDK ]
+       ↓
+[ Auth + JWT ]
+       ↓
+[ PostgreSQL + RLS ]
+       ↓
+[ Storage Buckets ]
+```
+
+---
+
+# 6️⃣ Fluxos Técnicos
+
+---
+
+## 🔹 Cadastro
+
+1. `signUp(email, password)`
+2. Supabase cria usuário em `auth.users`
+3. Trigger cria linha em `profiles`
+4. JWT é retornado
+
+---
+
+## 🔹 Login
+
+1. `signInWithPassword`
+2. Supabase retorna:
+
+   * access_token
+   * refresh_token
+   * user
+3. SDK salva sessão
+
+---
+
+## 🔹 Atualização de Perfil
+
+```js
+supabase
+  .from('profiles')
+  .update({...})
+  .eq('id', user.id)
+```
+
+Validação feita por RLS.
+
+---
+
+## 🔹 Criação de Clube
+
+```js
+supabase
+  .from('clubs')
+  .insert([{ admin_id: user.id, ... }])
+```
+
+---
+
+## 🔹 Upload de Avatar
+
+Bucket: `avatars`
+
+Caminho obrigatório:
+
+```
+public/{USER_ID}.png
+```
+
+Depois:
+
+* Recupera URL
+* Atualiza `profiles.photo_url`
+
+---
+
+## 🔹 Upload de Logo de Clube
+
+Bucket: `club_logos`
+
+Caminho obrigatório:
+
+```
+{CLUB_ID}/logo.png
+```
+
+Depois:
+
+* Recupera URL
+* Atualiza `clubs.logo_url`
+
+---
+
+# 7️⃣ Segurança
+
+## 🔐 RLS (Row Level Security)
+
+Todas as tabelas possuem políticas como:
+
+* `auth.uid() = id`
+* `auth.uid() = admin_id`
+
+Isso garante:
+
+* Isolamento por usuário
+* Segurança mesmo usando chave pública
+
+---
+
+## 🔐 Tokens
+
+* JWT assinado pelo Supabase
+* Validação automática no backend
+* Renovação com refresh token
+
+---
+
+# 8️⃣ Responsabilidades do Frontend
+
+O frontend deve:
+
+* Inicializar cliente Supabase com variáveis de ambiente
+* Controlar estado da sessão
+* Fazer upload antes de atualizar tabelas
+* Tratar erros retornados pelo SDK
+* Garantir que admin_id é sempre o usuário logado ao criar clube
+
+---
+
+# 9️⃣ Limitações do MVP
+
+O sistema atualmente não possui:
+
+* Sistema de membros de clube
+* Solicitação para entrar em clube
+* Eventos
+* Histórico de corridas
+* Rankings
+* Feed social
+
+O foco atual é:
+
+> Identidade de corredor + Estrutura básica de clube
+
+---
+
+# 🔟 Resumo Executivo
+
+Este projeto é um **MVP de plataforma de clubes de corrida**, com foco em:
+
+* Autenticação segura
+* Controle de acesso via RLS
+* Estrutura hierárquica (admin de clube)
+* Gerenciamento estruturado de arquivos
+* Arquitetura backend simplificada via Supabase
+
+Ele representa uma base sólida e escalável para evoluir para uma rede social esportiva.
+
+---
+
+Se você quiser, posso agora montar:
+
+* 📐 Modelo entidade-relacionamento
+* 🧠 Documento de arquitetura mais corporativo (nível empresa)
+* 🚀 Roadmap técnico de evolução
+* 🔎 Análise de melhorias arquiteturais
+
+Qual próximo nível você quer subir, Enzo?
