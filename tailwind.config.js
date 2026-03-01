@@ -11,9 +11,9 @@ export default {
             sans: ['Outfit', 'Inter', 'sans-serif'],
         },
         boxShadow: {
-            'clay': '10px 10px 20px #d1d5db, -10px -10px 20px #ffffff',
-            'clay-sm': '5px 5px 10px #d1d5db, -5px -5px 10px #ffffff',
-            'clay-inset': 'inset 10px 10px 20px #d1d5db, inset -10px -10px 20px #ffffff',
+            'clay': '10px 10px 30px #b0b5bd, -10px -10px 30px #ffffff',
+            'clay-sm': '5px 5px 15px #b0b5bd, -5px -5px 15px #ffffff',
+            'clay-inset': 'inset 10px 10px 20px #b0b5bd, inset -10px -10px 20px #ffffff',
             'clay-dark': '10px 10px 20px #0a0a0b, -10px -10px 20px #1c1c1f',
         },
   		borderRadius: {

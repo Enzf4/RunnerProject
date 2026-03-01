@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Mail, Lock, ArrowRight, Users, MapPin, Timer } from 'lucide-react'
+import { useToast } from '../components/Toast'
 
 export function AuthPage() {
   const [isLogin, setIsLogin] = useState(true)
@@ -13,6 +14,22 @@ export function AuthPage() {
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const navigate = useNavigate()
+  const { toast } = useToast()
+
+  const words = ['experientes', 'iniciantes', 'dedicados', 'apaixonados', 'de verdade']
+  const [wordIndex, setWordIndex] = useState(0)
+  const [fade, setFade] = useState(true)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFade(false)
+      setTimeout(() => {
+        setWordIndex(prev => (prev + 1) % words.length)
+        setFade(true)
+      }, 300)
+    }, 2500)
+    return () => clearInterval(interval)
+  }, [])
 
   const handleAuth = async (e) => {
     e.preventDefault()
@@ -28,7 +45,7 @@ export function AuthPage() {
         const { error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
         setErrorMsg('')
-        alert('Verifique seu email para confirmar o cadastro!')
+        toast.success('Verifique seu email para confirmar o cadastro!')
       }
     } catch (error) {
       setErrorMsg(error.message)
@@ -46,54 +63,37 @@ export function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex flex-col items-center justify-center px-6 py-12"
-      style={{ background: 'linear-gradient(135deg, #E6E6FA 0%, #FFDAB9 50%, #B0E0E6 100%)' }}
+    <div className="min-h-screen relative overflow-hidden flex flex-col items-center justify-center px-6 py-12 bg-gradient-to-br from-[#E6E6FA] via-[#FFDAB9] to-[#B0E0E6] dark:from-[#0c0a14] dark:via-[#14100c] dark:to-[#0a0e14]"
     >
       {/* Floating 3D Abstract Shapes */}
-      <div className="absolute top-10 left-6 w-28 h-28 rounded-[2rem] bg-pastel-peach/60 shadow-clay-sm animate-float rotate-12 blur-[1px]" />
-      <div className="absolute top-32 right-8 w-20 h-20 rounded-full bg-pastel-blue/70 shadow-clay-sm animate-float-reverse blur-[0.5px]" />
-      <div className="absolute bottom-24 left-10 w-16 h-16 rounded-2xl bg-pastel-lavender/80 shadow-clay-sm animate-float-reverse rotate-45" />
-      <div className="absolute bottom-40 right-6 w-24 h-24 rounded-[1.5rem] bg-pastel-green/50 shadow-clay-sm animate-float rotate-[-20deg]" />
-      <div className="absolute top-1/2 left-4 w-12 h-12 rounded-xl bg-pastel-pink/60 shadow-clay-sm animate-float rotate-[30deg]" />
+      <div className="absolute top-10 left-6 w-28 h-28 rounded-[2rem] bg-pastel-peach/60 dark:bg-orange-900/20 shadow-clay-sm dark:shadow-none animate-float rotate-12 blur-[1px]" />
+      <div className="absolute top-32 right-8 w-20 h-20 rounded-full bg-pastel-blue/70 dark:bg-blue-900/15 shadow-clay-sm dark:shadow-none animate-float-reverse blur-[0.5px]" />
+      <div className="absolute bottom-24 left-10 w-16 h-16 rounded-2xl bg-pastel-lavender/80 dark:bg-purple-900/15 shadow-clay-sm dark:shadow-none animate-float-reverse rotate-45" />
+      <div className="absolute bottom-40 right-6 w-24 h-24 rounded-[1.5rem] bg-pastel-green/50 dark:bg-green-900/10 shadow-clay-sm dark:shadow-none animate-float rotate-[-20deg]" />
+      <div className="absolute top-1/2 left-4 w-12 h-12 rounded-xl bg-pastel-pink/60 dark:bg-pink-900/15 shadow-clay-sm dark:shadow-none animate-float rotate-[30deg]" />
 
       {/* Main Card */}
       <div className="w-full max-w-sm relative z-10 animate-fade-in-up">
         
         {/* Logo / Brand */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-[1.5rem] bg-zinc-900 shadow-2xl mb-4">
-            <Users className="w-10 h-10 text-pastel-lavender" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-[1.5rem] bg-zinc-900 dark:bg-zinc-800 shadow-2xl mb-4">
+            <Users className="w-10 h-10 text-pastel-lavender dark:text-purple-400" />
           </div>
-          <h1 className="text-4xl font-extrabold text-zinc-900 tracking-tight leading-none">
+          <h1 className="text-4xl font-extrabold text-zinc-900 dark:text-zinc-50 tracking-tight leading-none">
             Runner Hub
           </h1>
-          <p className="text-zinc-600 mt-2 text-sm font-medium">
+          <p className="text-zinc-600 dark:text-zinc-400 mt-2 text-sm font-medium">
             Encontre sua tribo pelo pace e localização
           </p>
         </div>
 
-        {/* Bento Grid Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
-          <div className="bg-white/70 backdrop-blur-sm rounded-[1.2rem] p-3 shadow-clay-sm text-center animate-pulse-soft" style={{ animationDelay: '0s' }}>
-            <Users className="w-5 h-5 mx-auto text-purple-600 mb-1" />
-            <span className="text-xs font-bold text-zinc-700 block">Clubs</span>
-          </div>
-          <div className="bg-white/70 backdrop-blur-sm rounded-[1.2rem] p-3 shadow-clay-sm text-center animate-pulse-soft" style={{ animationDelay: '1s' }}>
-            <Timer className="w-5 h-5 mx-auto text-blue-600 mb-1" />
-            <span className="text-xs font-bold text-zinc-700 block">Pace</span>
-          </div>
-          <div className="bg-white/70 backdrop-blur-sm rounded-[1.2rem] p-3 shadow-clay-sm text-center animate-pulse-soft" style={{ animationDelay: '2s' }}>
-            <MapPin className="w-5 h-5 mx-auto text-orange-600 mb-1" />
-            <span className="text-xs font-bold text-zinc-700 block">City</span>
-          </div>
-        </div>
-
         {/* Auth Form Card */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] p-7 shadow-clay">
-          <h2 className="text-xl font-bold text-zinc-900 mb-1">
+        <div className="bg-white/80 dark:bg-zinc-900/70 backdrop-blur-xl rounded-[2rem] p-7 border border-zinc-200/60 dark:border-zinc-700/40">
+          <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50 mb-1">
             {isLogin ? 'Bem-vindo de volta' : 'Crie sua conta'}
           </h2>
-          <p className="text-zinc-500 text-sm mb-6">
+          <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-6">
             {isLogin ? 'Entre para continuar correndo.' : 'Junte-se à comunidade de corredores.'}
           </p>
 
@@ -101,7 +101,7 @@ export function AuthPage() {
           <button
             type="button"
             onClick={handleGoogleLogin}
-            className="w-full rounded-2xl h-12 text-sm font-bold bg-white border border-zinc-200 hover:bg-zinc-50 active:scale-[0.98] text-zinc-700 shadow-sm transition-all flex items-center justify-center gap-3 mb-5"
+            className="w-full rounded-2xl h-12 text-sm font-bold bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 active:scale-[0.98] text-zinc-700 dark:text-zinc-200 shadow-sm dark:shadow-none transition-all flex items-center justify-center gap-3 mb-5"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -114,14 +114,14 @@ export function AuthPage() {
 
           {/* Divider */}
           <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-zinc-200" />
-            <span className="text-xs text-zinc-400 font-medium">ou</span>
-            <div className="flex-1 h-px bg-zinc-200" />
+            <div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-700" />
+            <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">ou</span>
+            <div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-700" />
           </div>
 
           <form onSubmit={handleAuth} className="space-y-5">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-zinc-600 text-xs font-semibold ml-1 uppercase tracking-wider">Email</Label>
+              <Label htmlFor="email" className="text-zinc-600 dark:text-zinc-400 text-xs font-semibold ml-1 uppercase tracking-wider">Email</Label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <Input 
@@ -130,14 +130,14 @@ export function AuthPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required 
-                  className="rounded-2xl h-12 pl-11 bg-zinc-50/80 border-zinc-200/80 shadow-inner focus:bg-white transition-all"
+                  className="rounded-2xl h-12 pl-11 bg-zinc-50/80 dark:bg-zinc-800/60 border-zinc-200/80 dark:border-zinc-700/50 shadow-inner dark:shadow-none focus:bg-white dark:focus:bg-zinc-800 transition-all"
                   placeholder="runner@email.com"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-zinc-600 text-xs font-semibold ml-1 uppercase tracking-wider">Senha</Label>
+              <Label htmlFor="password" className="text-zinc-600 dark:text-zinc-400 text-xs font-semibold ml-1 uppercase tracking-wider">Senha</Label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <Input 
@@ -147,14 +147,33 @@ export function AuthPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required 
                   minLength={6}
-                  className="rounded-2xl h-12 pl-11 bg-zinc-50/80 border-zinc-200/80 shadow-inner focus:bg-white transition-all"
+                  className="rounded-2xl h-12 pl-11 bg-zinc-50/80 dark:bg-zinc-800/60 border-zinc-200/80 dark:border-zinc-700/50 shadow-inner dark:shadow-none focus:bg-white dark:focus:bg-zinc-800 transition-all"
                   placeholder="••••••••"
                 />
               </div>
             </div>
 
+            {isLogin && (
+              <div className="text-right -mt-1">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!email) { setErrorMsg('Digite seu email acima para recuperar a senha.'); return }
+                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                      redirectTo: window.location.origin
+                    })
+                    if (error) setErrorMsg(error.message)
+                    else { setErrorMsg(''); toast.success('Email de recuperação enviado! Verifique sua caixa de entrada.') }
+                  }}
+                  className="text-xs font-semibold text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
+            )}
+
             {errorMsg && (
-              <div className="text-red-600 text-sm font-medium text-center bg-red-50 p-3 rounded-xl border border-red-100">
+              <div className="text-red-600 dark:text-red-400 text-sm font-medium text-center bg-red-50 dark:bg-red-950/30 p-3 rounded-xl border border-red-100 dark:border-red-900/30">
                 {errorMsg}
               </div>
             )}
@@ -162,7 +181,7 @@ export function AuthPage() {
             <Button 
               type="submit" 
               disabled={loading}
-              className="w-full rounded-2xl h-12 text-sm font-bold bg-zinc-900 hover:bg-zinc-800 active:scale-[0.98] text-white shadow-xl transition-all flex items-center justify-center gap-2 group"
+              className="w-full rounded-2xl h-12 text-sm font-bold bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white active:scale-[0.98] text-white dark:text-zinc-900 shadow-xl dark:shadow-none transition-all flex items-center justify-center gap-2 group"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -179,7 +198,7 @@ export function AuthPage() {
             <button 
               type="button" 
               onClick={() => { setIsLogin(!isLogin); setErrorMsg('') }}
-              className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 transition-colors"
+              className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
             >
               {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Entrar'}
             </button>
@@ -187,8 +206,8 @@ export function AuthPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-zinc-500/70 text-xs mt-6 font-medium">
-          Strava encontra Meetup — para corredores de verdade.
+        <p className="text-center text-zinc-500/70 dark:text-zinc-600/70 text-xs mt-6 font-medium">
+          Para corredores <span className={`inline-block transition-all duration-300 ${fade ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'}`}>{words[wordIndex]}</span>.
         </p>
       </div>
     </div>
