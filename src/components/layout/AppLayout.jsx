@@ -12,9 +12,12 @@ export function AppLayout() {
         <div className="absolute bottom-20 right-10 w-40 h-40 rounded-full bg-pastel-blue/20 dark:bg-blue-900/10 blur-3xl" />
       </div>
 
-      <main className="flex-1 w-full max-w-lg mx-auto pb-28 pt-2 relative z-10">
-        <Outlet />
-      </main>
+      {/* Desktop: offset by sidebar */}
+      <div className="lg:pl-64">
+        <main className="flex-1 w-full max-w-lg lg:max-w-4xl mx-auto pb-28 lg:pb-8 pt-2 lg:pt-6 relative z-10">
+          <Outlet />
+        </main>
+      </div>
       <BottomNav />
     </div>
   )

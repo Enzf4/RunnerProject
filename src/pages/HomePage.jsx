@@ -38,7 +38,7 @@ export function HomePage() {
   )
 
   return (
-    <div className="px-5 pt-8 pb-4 animate-fade-in-up">
+    <div className="px-5 lg:px-8 pt-8 pb-4 animate-fade-in-up">
       {/* Greeting */}
       <header className="mb-8">
         <p className="text-sm font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
@@ -51,9 +51,9 @@ export function HomePage() {
       </header>
       
       {/* Bento Grid Stats */}
-      <div className="grid grid-cols-2 gap-3.5 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3.5 mb-8">
         {/* Pace Card */}
-        <div className="bg-fuchsia-200/80 dark:bg-fuchsia-950/50 rounded-[1.6rem] p-5 shadow-clay-sm dark:shadow-none dark:border dark:border-fuchsia-900/30 flex flex-col justify-between aspect-square relative overflow-hidden group hover:scale-[1.02] transition-transform">
+        <div className="bg-fuchsia-200/80 dark:bg-fuchsia-950/50 rounded-[1.6rem] p-5 shadow-clay-sm dark:shadow-none dark:border dark:border-fuchsia-900/30 flex flex-col justify-between aspect-square lg:aspect-auto lg:min-h-[180px] relative overflow-hidden group hover:scale-[1.02] transition-transform">
           <div className="absolute -bottom-4 -right-4 w-20 h-20 rounded-full bg-white/20 dark:bg-fuchsia-400/10 blur-xl" />
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-white/40 dark:bg-white/10 flex items-center justify-center">
@@ -70,7 +70,7 @@ export function HomePage() {
         </div>
         
         {/* Location Card */}
-        <div className="bg-pastel-green/60 dark:bg-green-950/50 rounded-[1.6rem] p-5 shadow-clay-sm dark:shadow-none dark:border dark:border-green-900/30 flex flex-col justify-between aspect-square relative overflow-hidden group hover:scale-[1.02] transition-transform">
+        <div className="bg-pastel-green/60 dark:bg-green-950/50 rounded-[1.6rem] p-5 shadow-clay-sm dark:shadow-none dark:border dark:border-green-900/30 flex flex-col justify-between aspect-square lg:aspect-auto lg:min-h-[180px] relative overflow-hidden group hover:scale-[1.02] transition-transform">
           <div className="absolute -top-4 -left-4 w-20 h-20 rounded-full bg-white/20 dark:bg-green-400/10 blur-xl" />
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-white/40 dark:bg-white/10 flex items-center justify-center">
@@ -86,7 +86,7 @@ export function HomePage() {
         </div>
 
         {/* Welcome Banner */}
-        <div className="col-span-2 bg-zinc-900 dark:bg-zinc-800/80 rounded-[1.6rem] p-5 shadow-xl dark:shadow-none dark:border dark:border-zinc-700/50 flex items-center justify-between group hover:bg-zinc-800 dark:hover:bg-zinc-700/80 transition-colors">
+        <div className="col-span-2 lg:col-span-1 bg-zinc-900 dark:bg-zinc-800/80 rounded-[1.6rem] p-5 shadow-xl dark:shadow-none dark:border dark:border-zinc-700/50 flex items-center justify-between group hover:bg-zinc-800 dark:hover:bg-zinc-700/80 transition-colors">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-pastel-lavender/20 flex items-center justify-center">
               <Users className="w-5 h-5 text-pastel-lavender" />
@@ -110,7 +110,7 @@ export function HomePage() {
             Ver todos <ChevronRight className="w-3.5 h-3.5" />
           </Link>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
           {recentClubs.length === 0 ? (
             <div className="bg-white/60 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.6rem] p-6 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 text-center">
               <Users className="w-8 h-8 mx-auto text-zinc-300 dark:text-zinc-600 mb-2" />

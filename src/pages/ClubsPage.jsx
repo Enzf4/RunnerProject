@@ -29,7 +29,7 @@ export function ClubsPage() {
   )
 
   return (
-    <div className="px-5 pt-8 pb-4 animate-fade-in-up">
+    <div className="px-5 lg:px-8 pt-8 pb-4 animate-fade-in-up">
       <header className="mb-6">
         <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">Clubes</h1>
         <p className="text-zinc-400 dark:text-zinc-500 mt-1 text-sm font-medium">Encontre comunidades de corrida na sua cidade.</p>
@@ -52,7 +52,7 @@ export function ClubsPage() {
           <div className="w-8 h-8 border-4 border-pastel-lavender border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
           {filtered.length === 0 ? (
             <div className="bg-white/60 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.6rem] p-8 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 text-center">
               <Users className="w-10 h-10 mx-auto text-zinc-300 dark:text-zinc-600 mb-3" />

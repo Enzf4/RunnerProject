@@ -114,7 +114,7 @@ export function ProfilePage() {
   if (!user) return null
 
   return (
-    <div className="px-5 pt-8 pb-4 animate-fade-in-up">
+    <div className="px-5 lg:px-8 pt-8 pb-4 animate-fade-in-up">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
