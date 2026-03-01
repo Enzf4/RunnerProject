@@ -1,0 +1,28 @@
+O projeto trata-se de uma Plataforma Social e de Gestão para Clubes de Corrida.
+
+O foco principal é conectar corredores e organizar comunidades em torno do esporte, permitindo que o usuário não seja apenas um "atleta isolado", mas parte de um ecossistema estruturado.
+
+Aqui estão os três pilares que definem o tema do projeto:
+
+1. Identidade do Corredor (Personal Branding)
+O projeto permite que cada usuário crie um perfil técnico. Ao contrário de uma rede social comum, aqui os dados são específicos para o nicho:
+
+Métricas de Performance: Como o pace médio (ritmo por quilômetro).
+
+Geolocalização: Foco na cidade para facilitar encontros e treinos locais.
+
+Avatar Personalizado: Gestão de imagem de perfil via Storage.
+
+2. Gestão de Comunidades (Running Clubs)
+O coração do projeto é a funcionalidade de Clubes. Ele resolve o problema de organização de grupos de corrida, permitindo:
+
+Criação de Clubes: Qualquer usuário pode fundar seu próprio grupo.
+
+Regras e Governança: O administrador define a descrição e as "regras da casa" (ex: "Não caminhar na subida").
+
+Identidade Visual: Gestão de logotipos exclusivos para cada clube.
+
+3. Ecossistema de Dados e Segurança
+Tecnicamente, o projeto é um estudo de caso de Segurança de Dados Relacionais. Através do uso de RLS (Row Level Security), o projeto garante que, embora o ambiente seja social, a privacidade e a autonomia sobre os dados (quem pode editar o quê) sejam rigorosamente respeitadas.
+
+Em resumo: É um "Strava encontra o Meetup", focado em dar ferramentas para que líderes de grupos de corrida organizem seus membros e para que corredores encontrem sua "tribo" baseada em localização e ritmo de treino.

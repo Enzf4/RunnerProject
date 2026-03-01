@@ -1,0 +1,114 @@
+Monte um guia técnico e do que o projeto se trata (contexto) completo em markdown sobre o projeto abaixo:  
+
+1. Credenciais de Conexão
+Para inicializar o SDK no React, utilizem estas variáveis de ambiente (.env):
+
+Project URL: https://dcvmglbhuoahxvtsrjoz.supabase.co
+
+API Key (anon / public): sb_publishable_iQaJfOyoNm8GHjc61LoFWw_WiFVkKfd
+
+2. Autenticação (Auth)
+O Supabase cuidará da criação dos tokens de sessão (JWT).
+
+Cadastro (Sign Up)
+URL da API: POST https://dcvmglbhuoahxvtsrjoz.supabase.co/auth/v1/signup
+
+Como fazer no SDK (React):
+
+JavaScript
+const { data, error } = await supabase.auth.signUp({
+  email: 'usuario@email.com',
+  password: 'senhaSegura123'
+})
+(Nota: Uma trigger no banco cria automaticamente a linha de perfil desse usuário na tabela profiles após o cadastro).
+
+Login (Sign In)
+URL da API: POST https://dcvmglbhuoahxvtsrjoz.supabase.co/auth/v1/token?grant_type=password
+
+Como fazer no SDK (React):
+
+JavaScript
+const { data, error } = await supabase.auth.signInWithPassword({
+  email: 'usuario@email.com',
+  password: 'senhaSegura123'
+})
+Recuperação de Senha
+URL da API: POST https://dcvmglbhuoahxvtsrjoz.supabase.co/auth/v1/recover
+
+Como fazer no SDK (React):
+
+JavaScript
+const { data, error } = await supabase.auth.resetPasswordForEmail('usuario@email.com')
+3. Banco de Dados (Tabelas)
+Todas as tabelas estão protegidas por RLS. Os usuários só podem alterar o que lhes pertence.
+
+Atualizar Perfil do Usuário (profiles)
+Colunas: id, name, photo_url, pace_medio, cidade
+
+URL da API: PATCH https://dcvmglbhuoahxvtsrjoz.supabase.co/rest/v1/profiles?id=eq.[ID_DO_USUARIO]
+
+Headers exigidos na API: Authorization: Bearer [TOKEN_DO_USUARIO]
+
+Como fazer no SDK (React):
+
+JavaScript
+const { data, error } = await supabase
+  .from('profiles')
+  .update({
+    name: 'João Corredor',
+    pace_medio: '05:30',
+    cidade: 'Santos',
+    photo_url: 'URL_DA_FOTO_AQUI' // Link gerado no Storage
+  })
+  .eq('id', usuarioLogado.id)
+Criar e Editar Clubes de Corrida (clubs)
+Colunas: id, admin_id, name, description, logo_url, regras, created_at
+
+URL da API (Criar): POST https://dcvmglbhuoahxvtsrjoz.supabase.co/rest/v1/clubs
+
+URL da API (Editar): PATCH https://dcvmglbhuoahxvtsrjoz.supabase.co/rest/v1/clubs?id=eq.[ID_DO_CLUBE]
+
+Como fazer no SDK (React):
+
+JavaScript
+// O usuário que cria o clube deve ser o admin_id
+const { data, error } = await supabase
+  .from('clubs')
+  .insert([{
+    name: 'Nome do Clube',
+    description: 'Descrição completa',
+    regras: '1. Não caminhar na subida',
+    admin_id: usuarioLogado.id 
+  }])
+  .select()
+4. Storage (Upload de Imagens)
+O armazenamento de arquivos é separado do banco de dados. O fluxo é: 1) Fazer o upload do arquivo e pegar a URL gerada; 2) Fazer o UPDATE na tabela (profiles ou clubs) com essa URL.
+
+Bucket: avatars (Fotos de Perfil)
+O usuário deve salvar o arquivo com o próprio ID.
+
+URL da API: POST https://dcvmglbhuoahxvtsrjoz.supabase.co/storage/v1/object/avatars/public/[ID_DO_USUARIO].png
+
+Como fazer no SDK (React):
+
+JavaScript
+const { data, error } = await supabase.storage
+  .from('avatars')
+  .upload(public/${usuarioLogado.id}.png, arquivoDaImagem, { upsert: true })
+
+// Para pegar a URL após o upload:
+const publicUrl = supabase.storage.from('avatars').getPublicUrl(public/${usuarioLogado.id}.png).data.publicUrl
+Bucket: club_logos (Logos dos Clubes)
+Regra obrigatória: O arquivo da logo precisa ser salvo dentro de uma pasta com o ID exato do clube, e só o dono (admin_id) pode fazer isso.
+
+URL da API: POST https://dcvmglbhuoahxvtsrjoz.supabase.co/storage/v1/object/club_logos/[ID_DO_CLUBE]/logo.png
+
+Como fazer no SDK (React):
+
+JavaScript
+const { data, error } = await supabase.storage
+  .from('club_logos')
+  .upload(${clube.id}/logo.png, arquivoDaImagem, { upsert: true })
+
+// Para pegar a URL após o upload:
+const publicUrl = supabase.storage.from('club_logos').getPublicUrl(${clube.id}/logo.png).data.pu

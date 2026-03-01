@@ -7,12 +7,31 @@ export default {
   ],
   theme: {
   	extend: {
+        fontFamily: {
+            sans: ['Outfit', 'Inter', 'sans-serif'],
+        },
+        boxShadow: {
+            'clay': '10px 10px 20px #d1d5db, -10px -10px 20px #ffffff',
+            'clay-sm': '5px 5px 10px #d1d5db, -5px -5px 10px #ffffff',
+            'clay-inset': 'inset 10px 10px 20px #d1d5db, inset -10px -10px 20px #ffffff',
+            'clay-dark': '10px 10px 20px #0a0a0b, -10px -10px 20px #1c1c1f',
+        },
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
+  			sm: 'calc(var(--radius) - 4px)',
+            '2xl': '1rem',
+            '3xl': '1.5rem',
+            '4xl': '2rem',
   		},
   		colors: {
+            pastel: {
+                lavender: '#E6E6FA',
+                peach: '#FFDAB9',
+                blue: '#B0E0E6',
+                pink: '#FFD1DC',
+                green: '#C1E1C1'
+            },
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
@@ -46,7 +65,7 @@ export default {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
-  			chart: {
+   			chart: {
   				'1': 'hsl(var(--chart-1))',
   				'2': 'hsl(var(--chart-2))',
   				'3': 'hsl(var(--chart-3))',
@@ -56,5 +75,5 @@ export default {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [import("tailwindcss-animate")],
 }
