@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Sparkles, Type, FileText, ShieldCheck, Image, ArrowRight, MapPin } from 'lucide-react'
 import { useToast } from '../components/Toast'
+import { CitySelect } from '../components/CitySelect'
 
 export function CreateClubPage() {
   const [name, setName] = useState('')
@@ -129,12 +130,10 @@ export function CreateClubPage() {
             <Label htmlFor="cidade" className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold ml-1 uppercase tracking-wider flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5" /> Cidade
             </Label>
-            <Input 
-              id="cidade" 
+            <CitySelect
               value={cidade}
-              onChange={(e) => setCidade(e.target.value)}
-              placeholder="Ex: São Paulo"
-              className="rounded-2xl h-12 bg-zinc-50/80 dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-700/50 shadow-inner dark:shadow-none focus:bg-white dark:focus:bg-zinc-900 transition-all"
+              onChange={setCidade}
+              placeholder="Ex: São Paulo - SP"
             />
           </div>
           

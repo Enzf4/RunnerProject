@@ -7,6 +7,8 @@ import { ProfilePage } from './pages/ProfilePage'
 import { CreateClubPage } from './pages/CreateClubPage'
 import { ClubDetailsPage } from './pages/ClubDetailsPage'
 import { ClubsPage } from './pages/ClubsPage'
+import { RunnersPage } from './pages/RunnersPage'
+import { RunnerProfilePage } from './pages/RunnerProfilePage'
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
         <Route path="/clubs" element={<ClubsPage />} />
         <Route path="/clubs/new" element={<CreateClubPage />} />
         <Route path="/clubs/:id" element={<ClubDetailsPage />} />
+        <Route path="/runners" element={<RunnersPage />} />
+        <Route path="/runners/:id" element={<RunnerProfilePage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
     </Routes>
