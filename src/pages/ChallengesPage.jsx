@@ -109,16 +109,8 @@ export function ChallengesPage() {
         return;
       }
 
-      const responseText = await response.text();
-      let resultado = {};
-      
-      if (responseText) {
-        try {
-          resultado = JSON.parse(responseText);
-        } catch (e) {
-          console.error("A API retornou algo que não é JSON:", responseText);
-        }
-      }
+      // No axios o dado vem já em formato JSON dentro de response.data (se houver conteúdo)
+      const resultado = response.data || {};
 
       // 3. Registrar progresso detalhado
       setSyncResults(prev => ({
@@ -126,7 +118,7 @@ export function ChallengesPage() {
         [challengeId]: resultado
       }))
 
-      if (response.ok) {
+      if (response.status >= 200 && response.status < 300) {
         if (resultado.challengeCompleted) {
           toast.success("🏆 " + (resultado.message || "Parabéns! Desafio concluído!"));
         } else {

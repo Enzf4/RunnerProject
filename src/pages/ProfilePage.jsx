@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 import { fetchWithAuth } from '../lib/api'
+import axios from 'axios'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -88,15 +89,17 @@ export function ProfilePage() {
       const token = session?.access_token
       if (!token) return
 
-      const response = await fetch('https://api-projetointegrador-kmmg.onrender.com/api/strava/activities?count=3', {
+      // Usando axios diretamente pois a assinatura com headers nativos estava montada fixa
+      const response = await axios({
+        method: 'GET',
+        url: 'https://api-projetointegrador-kmmg.onrender.com/api/strava/activities?count=3',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
-      if (response.ok) {
-        const data = await response.json()
-        setStravaActivities(data)
+      if (response.status >= 200 && response.status < 300) {
+        setStravaActivities(response.data || [])
       }
     } catch (error) {
       console.error('Erro ao buscar atividades do Strava:', error)
@@ -190,12 +193,11 @@ export function ProfilePage() {
         return
       }
 
-      const response = await fetch(
-        `https://api-projetointegrador-kmmg.onrender.com/api/strava/disconnect?userId=${currentUser.id}`,
-        { method: 'DELETE' }
-      )
+      const response = await fetchWithAuth(`/api/strava/disconnect`, { 
+        method: 'DELETE' 
+      })
 
-      if (response.ok) {
+      if (response.status >= 200 && response.status < 300) {
         setIsStravaConnected(false)
         setStravaActivities([])
         toast.success('Strava desconectado com sucesso!')
