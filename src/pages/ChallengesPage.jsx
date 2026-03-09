@@ -87,7 +87,7 @@ export function ChallengesPage() {
     setSyncingId(challengeId)
     try {
       // 1. Ingressar/Sincronizar corridas mais recentes no período do desafio
-      const joinResponse = await fetchWithAuth(`/api/challenges/${challengeId}/join`, {
+      const joinResponse = await fetchWithAuth(`/api/challenges/${challengeId}/join?userId=${currentUser?.id}`, {
         method: 'POST',
       })
       if (joinResponse.status === 404) {
@@ -100,7 +100,7 @@ export function ChallengesPage() {
       }
 
       // 2. Validar desafio
-      const response = await fetchWithAuth(`/api/challenges/${challengeId}/sync`, {
+      const response = await fetchWithAuth(`/api/challenges/${challengeId}/sync?userId=${currentUser?.id}&recentCount=30`, {
         method: 'POST',
       })
 
