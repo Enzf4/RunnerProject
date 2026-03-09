@@ -25,10 +25,20 @@ export default {
                 from: { transform: 'translateY(0)' },
                 to: { transform: 'translateY(calc(-100% - var(--gap)))' },
             },
+            'modal-in': {
+                '0%': { opacity: '0', transform: 'scale(0.85) translateY(16px)' },
+                '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+            },
+            'overlay-in': {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+            },
         },
         animation: {
             marquee: 'marquee var(--duration) infinite linear',
             'marquee-vertical': 'marquee-vertical var(--duration) linear infinite',
+            'modal-in': 'modal-in 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards',
+            'overlay-in': 'overlay-in 0.2s ease forwards',
         },
   		borderRadius: {
   			lg: 'var(--radius)',

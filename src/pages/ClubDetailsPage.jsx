@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ArrowLeft, Calendar, ShieldCheck, FileText, Users, Pencil, X, Save, Check, Image, Crown, MapPin, UserPlus, LogOut, UserCircle, ChevronRight, Trash2 } from 'lucide-react'
+import { ArrowLeft, Calendar, ShieldCheck, FileText, Users, Pencil, X, Save, Check, Image, Crown, MapPin, UserPlus, LogOut, UserCircle, ChevronRight, Trash2, Target, Gift } from 'lucide-react'
 import { useToast } from '../components/Toast'
 import { CitySelect } from '../components/CitySelect'
 
@@ -405,6 +405,36 @@ export function ClubDetailsPage() {
         ) : (
           <p className="text-zinc-600 dark:text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap">{club.description}</p>
         )}
+      </div>
+
+      {/* Gamification Navigation */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <Link
+          to={`/clubs/${id}/challenges`}
+          className="bg-pastel-green/40 dark:bg-green-950/40 backdrop-blur-sm rounded-[1.4rem] p-4 shadow-clay-sm dark:shadow-none dark:border dark:border-green-900/30 flex items-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all"
+        >
+          <div className="w-10 h-10 rounded-xl bg-white/50 dark:bg-white/10 flex items-center justify-center flex-shrink-0">
+            <Target className="w-5 h-5 text-green-700 dark:text-green-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-green-900 dark:text-green-200">Desafios</p>
+            <p className="text-[10px] text-green-700/60 dark:text-green-400/60 font-medium">Metas e conquistas</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-green-600/40 dark:text-green-500/40 flex-shrink-0" />
+        </Link>
+        <Link
+          to={`/clubs/${id}/rewards`}
+          className="bg-fuchsia-200/40 dark:bg-fuchsia-950/40 backdrop-blur-sm rounded-[1.4rem] p-4 shadow-clay-sm dark:shadow-none dark:border dark:border-fuchsia-900/30 flex items-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all"
+        >
+          <div className="w-10 h-10 rounded-xl bg-white/50 dark:bg-white/10 flex items-center justify-center flex-shrink-0">
+            <Gift className="w-5 h-5 text-fuchsia-700 dark:text-fuchsia-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-fuchsia-900 dark:text-fuchsia-200">Prêmios</p>
+            <p className="text-[10px] text-fuchsia-700/60 dark:text-fuchsia-400/60 font-medium">Recompensas</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-fuchsia-600/40 dark:text-fuchsia-500/40 flex-shrink-0" />
+        </Link>
       </div>
 
       {/* Rules Card */}

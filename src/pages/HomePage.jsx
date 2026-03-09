@@ -27,6 +27,7 @@ export function HomePage() {
   const [recentClubs, setRecentClubs] = useState([])
   const [myClubCount, setMyClubCount] = useState(0)
   const [runnerCount, setRunnerCount] = useState(0)
+  const [isStravaConnected, setIsStravaConnected] = useState(true) // assume true to prevent flash
   const [loading, setLoading] = useState(true)
   const greeting = getGreeting()
 
@@ -34,12 +35,12 @@ export function HomePage() {
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('pace_medio, cidade, name, photo_url')
-          .eq('id', user.id)
-          .single()
-        setProfile(profileData)
+        const [profileResponse, stravaResponse] = await Promise.all([
+          supabase.from('profiles').select('pace_medio, cidade, name, photo_url').eq('id', user.id).single(),
+          supabase.from('user_strava_tokens').select('user_id').eq('user_id', user.id).maybeSingle()
+        ])
+        setProfile(profileResponse.data)
+        setIsStravaConnected(!!stravaResponse.data)
       }
 
       const { data: clubsData } = await supabase
@@ -89,6 +90,29 @@ export function HomePage() {
 
   return (
     <div className="px-5 lg:px-8 pt-6 pb-6">
+
+      {/* ─── Strava Connection Banner ─── */}
+      {!isStravaConnected && (
+        <Link to="/profile" className="block mb-6 animate-fade-in-up">
+           <div className="bg-gradient-to-r from-[#FC4C02] to-[#E04400] rounded-2xl p-4 shadow-lg shadow-orange-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-white overflow-hidden relative group">
+             <div className="absolute top-0 right-0 -mt-6 -mr-6 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+             <div className="flex items-center gap-3 relative z-10">
+               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                 <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="currentColor">
+                   <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+                 </svg>
+               </div>
+               <div>
+                 <h3 className="font-bold text-sm leading-tight">Conecte seu Strava</h3>
+                 <p className="text-[11px] font-medium text-white/80">Sincronize automicamente suas corridas.</p>
+               </div>
+             </div>
+             <div className="flex items-center gap-1 text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors relative z-10 w-max">
+               Conectar agora <ArrowRight className="w-3.5 h-3.5" />
+             </div>
+           </div>
+        </Link>
+      )}
 
       {/* ─── Hero Greeting ─── */}
       <header className="mb-6 animate-fade-in-up">

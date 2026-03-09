@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
+import { fetchWithAuth } from '../lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, MapPin, Timer, Mail, Camera, LogOut, Save, Check, AlignLeft } from 'lucide-react'
+import { User, MapPin, Timer, Mail, Camera, LogOut, Save, Check, AlignLeft, Link2, Link2Off, Loader2, Activity, Calendar, Zap, Mountain, ExternalLink } from 'lucide-react'
 import { useToast } from '../components/Toast'
 import { CitySelect } from '../components/CitySelect'
 
@@ -13,6 +15,12 @@ export function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [stravaConnecting, setStravaConnecting] = useState(false)
+  const [stravaDisconnecting, setStravaDisconnecting] = useState(false)
+  const [stravaSuccess, setStravaSuccess] = useState(false)
+  const [isStravaConnected, setIsStravaConnected] = useState(false)
+  const [stravaActivities, setStravaActivities] = useState([])
+  const [loadingActivities, setLoadingActivities] = useState(false)
   const { toast } = useToast()
   
   const [profile, setProfile] = useState({
@@ -24,30 +32,78 @@ export function ProfilePage() {
   })
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('strava_athlete_id')) {
+      setStravaSuccess(true)
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (stravaSuccess) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [stravaSuccess])
+
+  useEffect(() => {
     async function loadProfile() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUser(user)
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
         
-        if (data) {
+        // Load profile and strava connection in parallel
+        const [profileResponse, stravaResponse] = await Promise.all([
+          supabase.from('profiles').select('*').eq('id', user.id).single(),
+          supabase.from('user_strava_tokens').select('user_id').maybeSingle()
+        ])
+        
+        const profileData = profileResponse.data
+        if (profileData) {
           setProfile({
-            name: data.name || '',
-            pace_medio: data.pace_medio || '',
-            cidade: data.cidade || '',
-            photo_url: data.photo_url || '',
-            bio: data.bio || ''
+            name: profileData.name || '',
+            pace_medio: profileData.pace_medio || '',
+            cidade: profileData.cidade || '',
+            photo_url: profileData.photo_url || '',
+            bio: profileData.bio || ''
           })
+        }
+
+        if (stravaResponse.data) {
+          setIsStravaConnected(true)
+          fetchRecentActivities()
         }
       }
       setLoading(false)
     }
     loadProfile()
   }, [])
+
+  const fetchRecentActivities = async () => {
+    setLoadingActivities(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) return
+
+      const response = await fetch('https://api-projetointegrador-kmmg.onrender.com/api/strava/activities?count=3', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setStravaActivities(data)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar atividades do Strava:', error)
+    } finally {
+      setLoadingActivities(false)
+    }
+  }
 
   const handleUpdate = async (e) => {
     e.preventDefault()
@@ -107,6 +163,53 @@ export function ProfilePage() {
     }
   }
 
+  const conectarStrava = async () => {
+    setStravaConnecting(true)
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      if (!currentUser) {
+        toast.error('Usuário não autenticado.')
+        return
+      }
+
+      window.location.href = `https://api-projetointegrador-kmmg.onrender.com/api/strava/login?userId=${currentUser.id}`
+      
+    } catch (error) {
+      console.error('Erro ao iniciar login com Strava', error)
+      toast.error('Erro de conexão com o Strava.')
+      setStravaConnecting(false)
+    }
+  }
+
+  const desconectarStrava = async () => {
+    setStravaDisconnecting(true)
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      if (!currentUser) {
+        toast.error('Usuário não autenticado.')
+        return
+      }
+
+      const response = await fetch(
+        `https://api-projetointegrador-kmmg.onrender.com/api/strava/disconnect?userId=${currentUser.id}`,
+        { method: 'DELETE' }
+      )
+
+      if (response.ok) {
+        setIsStravaConnected(false)
+        setStravaActivities([])
+        toast.success('Strava desconectado com sucesso!')
+      } else {
+        toast.error('Erro ao desconectar.')
+      }
+    } catch (error) {
+      console.error('Erro ao desconectar Strava', error)
+      toast.error('Erro ao desconectar.')
+    } finally {
+      setStravaDisconnecting(false)
+    }
+  }
+
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="w-8 h-8 border-4 border-pastel-lavender border-t-transparent rounded-full animate-spin" />
@@ -116,6 +219,29 @@ export function ProfilePage() {
 
   return (
     <div className="px-5 lg:px-8 pt-8 pb-4 animate-fade-in-up">
+      {/* Strava Success Modal */}
+      {stravaSuccess && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-5 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setStravaSuccess(false)}>
+          <div className="bg-white dark:bg-zinc-900 rounded-[2rem] p-8 shadow-2xl max-w-sm w-full text-center flex flex-col items-center gap-4 animate-fade-in-up" onClick={e => e.stopPropagation()}>
+            <div className="w-20 h-20 rounded-[1.5rem] bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-10 h-10 text-[#FC4C02]" fill="currentColor">
+                <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold text-zinc-900 dark:text-zinc-50 mb-1">Strava Conectado! 🎉</h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">Sua conta do Strava foi vinculada com sucesso. Suas atividades serão sincronizadas automaticamente.</p>
+            </div>
+            <button
+              onClick={() => setStravaSuccess(false)}
+              className="w-full bg-[#FC4C02] hover:bg-[#E04400] text-white font-bold text-sm py-3.5 rounded-2xl transition-all active:scale-[0.98] shadow-lg shadow-orange-500/20"
+            >
+              Ótimo!
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -188,7 +314,7 @@ export function ProfilePage() {
       </div>
       
       {/* Edit Form */}
-      <div className="bg-white/70 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.8rem] p-6 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40">
+      <div className="bg-white/70 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.8rem] p-6 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 mb-4">
         <h3 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-4">Editar Informações</h3>
         <form onSubmit={handleUpdate} className="space-y-5">
           <div className="space-y-1.5">
@@ -266,6 +392,132 @@ export function ProfilePage() {
           </Button>
         </form>
       </div>
-    </div>
-  )
-}
+
+      {/* Strava Integration Card */}
+      <div className="relative overflow-hidden bg-white/70 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.8rem] p-6 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40">
+        {/* Decorative background element */}
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-[#FC4C02]/10 dark:bg-[#FC4C02]/20 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 flex items-center mb-5">
+          <div className="flex items-center gap-3">
+             <div className="w-12 h-12 rounded-2xl bg-[#FC4C02]/10 dark:bg-[#FC4C02]/20 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#FC4C02]" fill="currentColor">
+                <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+              </svg>
+             </div>
+             <div>
+               <h3 className="text-lg font-extrabold text-zinc-900 dark:text-zinc-50 tracking-tight">Strava</h3>
+               <p className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Integração</p>
+             </div>
+            {isStravaConnected && (
+               <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ml-3 flex items-center gap-1">
+                 <Check className="w-3 h-3" /> Conectado
+               </span>
+            )}
+           </div>
+         </div>
+         
+         <p className="relative z-10 text-sm text-zinc-600 dark:text-zinc-400 font-medium mb-6 leading-relaxed">
+           Conecte sua conta do Strava para sincronizar automaticamente suas atividades e validar desafios no clube.
+         </p>
+         
+         <div className="relative z-10 flex flex-col sm:flex-row gap-3">
+           {!isStravaConnected ? (
+             <button
+               onClick={conectarStrava}
+               disabled={stravaConnecting}
+               className="flex items-center justify-center gap-2 bg-[#FC4C02] hover:bg-[#E04400] active:scale-[0.98] text-white text-sm font-bold px-5 py-3.5 rounded-2xl shadow-xl shadow-orange-500/20 transition-all disabled:opacity-60 flex-1"
+             >
+               {stravaConnecting ? (
+                 <><Loader2 className="w-4 h-4 animate-spin" /> Conectando...</>
+               ) : (
+                 <><Link2 className="w-4 h-4" /> Conectar com Strava</>
+               )}
+             </button>
+           ) : (
+             <div className="flex-1 flex items-center gap-3 px-5 py-3.5 bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30 rounded-2xl">
+               <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-800/40 flex items-center justify-center">
+                 <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+               </div>
+               <div>
+                  <p className="text-sm font-bold text-green-900 dark:text-green-300">Conta Sincronizada</p>
+                  <p className="text-[11px] text-green-700/70 dark:text-green-400/70 font-medium">Suas corridas são atualizadas automaticamente.</p>
+               </div>
+             </div>
+           )}
+
+           {isStravaConnected && (
+             <button
+               onClick={desconectarStrava}
+               disabled={stravaDisconnecting}
+               className="flex items-center justify-center gap-2 bg-zinc-100 dark:bg-zinc-900/50 hover:bg-red-50 dark:hover:bg-red-950/30 text-zinc-500 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400 text-sm font-bold px-5 py-3.5 rounded-2xl transition-all disabled:opacity-60 active:scale-[0.98] border border-transparent hover:border-red-200 dark:hover:border-red-900/50"
+             >
+               {stravaDisconnecting ? (
+                 <><Loader2 className="w-4 h-4 animate-spin" /> Desconectando...</>
+               ) : (
+                 <><Link2Off className="w-4 h-4" /> Desconectar</>
+               )}
+             </button>
+           )}
+         </div>
+
+         {/* Extensão de Atividades */}
+         {isStravaConnected && (
+           <div className="relative z-10 mt-6 pt-6 border-t border-zinc-200/60 dark:border-zinc-700/50">
+             <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 mb-4 flex items-center gap-2">
+               <Activity className="w-4 h-4 text-[#FC4C02]" /> Atividades Recentes
+             </h4>
+             
+             {loadingActivities ? (
+               <div className="flex items-center justify-center py-6">
+                 <Loader2 className="w-5 h-5 text-zinc-400 animate-spin" />
+               </div>
+             ) : stravaActivities.length > 0 ? (
+               <div className="space-y-3">
+                 {stravaActivities.map((activity) => (
+                   <a 
+                     key={activity.id}
+                     href={activity.stravaUrl}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="block bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 rounded-2xl p-4 border border-zinc-200/60 dark:border-zinc-700/50 transition-colors group"
+                   >
+                     <div className="flex justify-between items-start mb-2">
+                       <div>
+                         <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-[#FC4C02] transition-colors">{activity.name}</p>
+                         <div className="flex items-center gap-1.5 text-[10px] font-semibold text-zinc-500 mt-1 uppercase tracking-wider">
+                           <Calendar className="w-3 h-3" />
+                           {new Date(activity.startDate).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                         </div>
+                       </div>
+                       <ExternalLink className="w-4 h-4 text-zinc-400 group-hover:text-[#FC4C02] transition-colors" />
+                     </div>
+                     
+                     <div className="grid grid-cols-3 gap-2 mt-3 p-3 bg-white dark:bg-zinc-950/50 rounded-xl shadow-sm border border-zinc-100 dark:border-zinc-800/50">
+                       <div className="text-center">
+                         <span className="block text-[10px] text-zinc-400 font-bold uppercase mb-0.5">Distância</span>
+                         <span className="text-sm font-black text-zinc-800 dark:text-zinc-200">{activity.distanceKm} km</span>
+                       </div>
+                       <div className="text-center border-l border-r border-zinc-100 dark:border-zinc-800/50">
+                         <span className="block text-[10px] text-zinc-400 font-bold uppercase mb-0.5">Pace</span>
+                         <span className="text-sm font-black text-zinc-800 dark:text-zinc-200">{activity.paceFormatted}/km</span>
+                       </div>
+                       <div className="text-center">
+                         <span className="block text-[10px] text-zinc-400 font-bold uppercase mb-0.5">Tempo</span>
+                         <span className="text-sm font-black text-zinc-800 dark:text-zinc-200">{Math.round(activity.movingTimeMinutes)} min</span>
+                       </div>
+                     </div>
+                   </a>
+                 ))}
+               </div>
+             ) : (
+               <div className="bg-zinc-50 dark:bg-zinc-900/30 rounded-2xl p-5 text-center border border-zinc-200/60 dark:border-zinc-700/50">
+                 <p className="text-sm text-zinc-500 font-medium">Nenhuma atividade recente encontrada no Strava.</p>
+               </div>
+             )}
+           </div>
+         )}
+       </div>
+     </div>
+   )
+ }
