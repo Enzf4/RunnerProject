@@ -87,12 +87,13 @@ export function ProfilePage() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-      if (!token) return
+      const userId = session?.user?.id
+      if (!token || !userId) return
 
       // Usando axios diretamente pois a assinatura com headers nativos estava montada fixa
       const response = await axios({
         method: 'GET',
-        url: 'https://api-projetointegrador-kmmg.onrender.com/api/strava/activities?count=3',
+        url: `https://api-projetointegrador-kmmg.onrender.com/api/strava/activities?userId=${userId}&count=3`,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -193,7 +194,7 @@ export function ProfilePage() {
         return
       }
 
-      const response = await fetchWithAuth(`/api/strava/disconnect`, { 
+      const response = await fetchWithAuth(`/api/strava/disconnect?userId=${currentUser.id}`, { 
         method: 'DELETE' 
       })
 
