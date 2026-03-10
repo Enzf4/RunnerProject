@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { Timer, MapPin, Users, ChevronRight, UserCircle, Compass, Trophy, ArrowRight, PlusCircle, Search, Zap } from 'lucide-react'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { BorderBeam } from '@/components/ui/border-beam'
+import { fetchWithAuth } from '../lib/api'
 
 const motivationalPhrases = [
   "Cada quilômetro conta 🏃",
@@ -28,6 +29,7 @@ export function HomePage() {
   const [myClubCount, setMyClubCount] = useState(0)
   const [runnerCount, setRunnerCount] = useState(0)
   const [isStravaConnected, setIsStravaConnected] = useState(true) // assume true to prevent flash
+  const [recentActivities, setRecentActivities] = useState([])
   const [loading, setLoading] = useState(true)
   const greeting = getGreeting()
 
@@ -40,7 +42,28 @@ export function HomePage() {
           supabase.from('user_strava_tokens').select('user_id').eq('user_id', user.id).maybeSingle()
         ])
         setProfile(profileResponse.data)
-        setIsStravaConnected(!!stravaResponse.data)
+        
+        const hasStrava = !!stravaResponse.data;
+        setIsStravaConnected(hasStrava)
+
+        if (hasStrava) {
+          try {
+            const activitiesRes = await fetchWithAuth(`/api/strava/activities?userId=${user.id}&count=3`);
+            if (activitiesRes.ok || (activitiesRes.status >= 200 && activitiesRes.status < 300)) {
+              let acts = [];
+              if (activitiesRes.json) {
+                acts = await activitiesRes.json();
+              } else if (activitiesRes.data) {
+                acts = activitiesRes.data;
+              }
+              if (Array.isArray(acts)) {
+                setRecentActivities(acts);
+              }
+            }
+          } catch(err) {
+            console.error('Erro ao buscar atividades recentes:', err);
+          }
+        }
       }
 
       const { data: clubsData } = await supabase
@@ -298,6 +321,56 @@ export function HomePage() {
           <p className="text-xs font-bold leading-tight">Meu<br/>Perfil</p>
         </Link>
       </div>
+
+      {/* ─── Recent Strava Activities ─── */}
+      {isStravaConnected && (
+        <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '0.28s' }}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-extrabold tracking-tight">Corridas Recentes</h2>
+          </div>
+          {recentActivities.length === 0 ? (
+            <div className="bg-white/60 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.6rem] p-6 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 text-center">
+              <Zap className="w-8 h-8 mx-auto text-zinc-300 dark:text-zinc-600 mb-2" />
+              <p className="text-zinc-400 dark:text-zinc-500 text-sm font-medium">Você ainda não tem corridas recentes registradas.</p>
+              <p className="text-zinc-400 dark:text-zinc-500 text-xs mt-1">Vá correr e sincronize com o Strava para ver aqui!</p>
+            </div>
+          ) : (
+            <div className="flex overflow-x-auto gap-3 pb-2 -mx-5 px-5 lg:mx-0 lg:px-0 lg:grid lg:grid-cols-3 snap-x">
+              {recentActivities.map(activity => (
+                <a 
+                  key={activity.id} 
+                  href={activity.stravaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-white/70 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.4rem] p-4 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 w-[240px] flex-shrink-0 snap-start lg:w-auto hover:scale-[1.02] active:scale-[0.98] transition-transform group relative overflow-hidden"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="w-8 h-8 rounded-xl bg-[#FC4C02]/10 flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 text-[#FC4C02]" fill="currentColor">
+                        <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+                      </svg>
+                    </div>
+                    <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500">
+                      {new Date(activity.startDate).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-bold text-zinc-900 dark:text-white truncate mb-3 group-hover:text-[#FC4C02] transition-colors">{activity.name}</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Distância</span>
+                      <span className="text-sm font-black text-zinc-900 dark:text-zinc-100">{activity.distanceKm} <span className="text-[10px] text-zinc-500 font-medium">km</span></span>
+                    </div>
+                    <div>
+                      <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Pace Médio</span>
+                      <span className="text-sm font-black text-zinc-900 dark:text-zinc-100">{Math.floor(activity.paceSecPerKm / 60)}:{Math.round(activity.paceSecPerKm % 60).toString().padStart(2, '0')} <span className="text-[10px] text-zinc-500 font-medium">/km</span></span>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── Recent Clubs ─── */}
       <div className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
