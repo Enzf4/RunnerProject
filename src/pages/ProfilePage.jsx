@@ -215,7 +215,7 @@ export function ProfilePage() {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="w-8 h-8 border-4 border-pastel-lavender border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-4 border-fuchsia-600 border-t-transparent rounded-full animate-spin" />
     </div>
   )
   if (!user) return null
@@ -263,14 +263,14 @@ export function ProfilePage() {
       </div>
       
       {/* Avatar Card */}
-      <div className="bg-white/70 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.8rem] p-6 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 mb-4">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 transition-all hover:shadow-md hover:border-fuchsia-200 dark:hover:border-fuchsia-500/30 flex flex-col mb-4">
         <div className="flex items-center gap-5">
           <label className="relative cursor-pointer group">
-            <div className="w-20 h-20 rounded-[1.2rem] bg-pastel-lavender/40 dark:bg-purple-900/30 shadow-inner dark:shadow-none flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-pastel-lavender/60 dark:group-hover:border-purple-500/40 transition-all">
+            <div className="w-20 h-20 rounded-2xl bg-fuchsia-50 dark:bg-fuchsia-500/10 flex items-center justify-center flex-shrink-0 border-2 border-transparent group-hover:border-fuchsia-100/50 dark:group-hover:border-fuchsia-500/20 transition-all overflow-hidden">
               {profile.photo_url ? (
                 <img src={profile.photo_url} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
-                <User className="w-8 h-8 text-purple-400 dark:text-purple-500" />
+                <User className="w-8 h-8 text-fuchsia-500" />
               )}
             </div>
             <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-zinc-900 dark:bg-zinc-200 flex items-center justify-center shadow-lg group-hover:bg-zinc-700 dark:group-hover:bg-white transition-colors">
@@ -278,50 +278,44 @@ export function ProfilePage() {
             </div>
             <input type="file" accept="image/*" onChange={handleAvatarUpload} disabled={uploading} className="hidden" />
             {uploading && (
-              <div className="absolute inset-0 bg-white/70 dark:bg-black/50 rounded-[1.2rem] flex items-center justify-center">
-                <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+              <div className="absolute inset-0 bg-white/70 dark:bg-black/50 rounded-2xl flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-fuchsia-600 border-t-transparent rounded-full animate-spin" />
               </div>
             )}
           </label>
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-extrabold truncate">{profile.name || 'Corredor'}</h2>
-            <p className="text-sm text-zinc-400 dark:text-zinc-500 font-medium truncate">{profile.cidade || 'Nenhuma cidade'}</p>
-            <div className="flex items-center gap-1 mt-1 text-zinc-300 dark:text-zinc-600">
-              <Mail className="w-3 h-3" />
-              <span className="text-xs truncate">{user.email}</span>
+            <h2 className="text-xl font-bold text-zinc-900 dark:text-white truncate">{profile.name || 'Corredor'}</h2>
+            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 truncate">{profile.cidade || 'Nenhuma cidade'}</p>
+            <div className="flex items-center gap-1.5 mt-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 px-2.5 py-1 rounded-lg border border-zinc-100 dark:border-zinc-800 w-fit">
+              <Mail className="w-3.5 h-3.5" />
+              <span className="truncate">{user.email}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Stat Chips */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-fuchsia-200/60 dark:bg-fuchsia-950/40 rounded-[1.2rem] p-4 shadow-clay-sm dark:shadow-none dark:border dark:border-fuchsia-900/30 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-white/50 dark:bg-white/10 flex items-center justify-center">
-            <Timer className="w-4 h-4 text-fuchsia-700 dark:text-fuchsia-300" />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-fuchsia-700/60 dark:text-fuchsia-400/60 uppercase tracking-wider">Pace</p>
-            <p className="text-lg font-black text-fuchsia-900 dark:text-fuchsia-200 leading-none">{profile.pace_medio || '--:--'}</p>
-          </div>
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800 flex items-center justify-center gap-2">
+          <Timer className="w-4 h-4 text-fuchsia-500" />
+          <span className="text-sm font-bold text-zinc-900 dark:text-white">
+            {profile.pace_medio || '--:--'} <span className="text-zinc-500 text-xs font-medium">/km</span>
+          </span>
         </div>
-        <div className="bg-pastel-green/40 dark:bg-green-950/40 rounded-[1.2rem] p-4 shadow-clay-sm dark:shadow-none dark:border dark:border-green-900/30 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-white/50 dark:bg-white/10 flex items-center justify-center">
-            <MapPin className="w-4 h-4 text-green-700 dark:text-green-300" />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-green-700/60 dark:text-green-400/60 uppercase tracking-wider">Cidade</p>
-            <p className="text-sm font-black text-green-900 dark:text-green-200 leading-tight truncate">{profile.cidade || '—'}</p>
-          </div>
+        <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800 flex items-center justify-center gap-2">
+          <MapPin className="w-4 h-4 text-emerald-500" />
+          <span className="text-sm font-bold text-zinc-900 dark:text-white truncate max-w-[120px]">
+            {profile.cidade || '—'}
+          </span>
         </div>
       </div>
       
       {/* Edit Form */}
-      <div className="bg-white/70 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.8rem] p-6 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 mb-4">
-        <h3 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-4">Editar Informações</h3>
-        <form onSubmit={handleUpdate} className="space-y-5">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 transition-all hover:shadow-md hover:border-fuchsia-200 dark:hover:border-fuchsia-500/30 mb-6 flex flex-col">
+        <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-5">Editar Informações</h3>
+        <form onSubmit={handleUpdate} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="name" className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold ml-1 uppercase tracking-wider flex items-center gap-1.5">
+            <Label htmlFor="name" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
               <User className="w-3.5 h-3.5" /> Nome Completo
             </Label>
             <Input 
@@ -329,12 +323,12 @@ export function ProfilePage() {
               value={profile.name}
               onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
               placeholder="João Corredor"
-              className="rounded-2xl h-12 bg-zinc-50/80 dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-700/50 shadow-inner dark:shadow-none focus:bg-white dark:focus:bg-zinc-900 transition-all"
+              className="w-full rounded-xl h-11 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-zinc-100 transition-all"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="bio" className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold ml-1 uppercase tracking-wider flex items-center gap-1.5">
+            <Label htmlFor="bio" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
               <AlignLeft className="w-3.5 h-3.5" /> Bio
             </Label>
             <textarea 
@@ -343,13 +337,13 @@ export function ProfilePage() {
               onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
               placeholder="Conte um pouco sobre você como corredor..."
               rows={3}
-              className="w-full rounded-2xl p-4 text-sm bg-zinc-50/80 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-700/50 shadow-inner dark:shadow-none focus:outline-none focus:ring-2 focus:ring-pastel-lavender/50 dark:focus:ring-purple-500/30 focus:bg-white dark:focus:bg-zinc-900 transition-all resize-none dark:text-zinc-100"
+              className="w-full rounded-xl p-3 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 transition-all resize-none dark:text-zinc-100"
             />
           </div>
           
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="pace" className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold ml-1 uppercase tracking-wider flex items-center gap-1.5">
+              <Label htmlFor="pace" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Timer className="w-3.5 h-3.5" /> Pace
               </Label>
               <Input 
@@ -357,70 +351,74 @@ export function ProfilePage() {
                 value={profile.pace_medio}
                 onChange={(e) => setProfile(prev => ({ ...prev, pace_medio: e.target.value }))}
                 placeholder="05:30"
-                className="rounded-2xl h-12 bg-zinc-50/80 dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-700/50 shadow-inner dark:shadow-none focus:bg-white dark:focus:bg-zinc-900 transition-all"
+                className="w-full rounded-xl h-11 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-zinc-100 transition-all"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="cidade" className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold ml-1 uppercase tracking-wider flex items-center gap-1.5">
+              <Label htmlFor="cidade" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5" /> Cidade
               </Label>
-              <CitySelect
-                value={profile.cidade}
-                onChange={(val) => setProfile(prev => ({ ...prev, cidade: val }))}
-                placeholder="São Paulo - SP"
-              />
+              <div className="w-full [&>div>button]:h-11 [&>div>button]:rounded-xl [&>div]:bg-white [&>div>button]:bg-white dark:[&>div]:bg-zinc-800 dark:[&>div>button]:bg-zinc-800 focus-within:ring-fuchsia-500/50">
+                <CitySelect
+                  value={profile.cidade}
+                  onChange={(val) => setProfile(prev => ({ ...prev, cidade: val }))}
+                  placeholder="Selecione..."
+                />
+              </div>
             </div>
           </div>
           
-          <Button 
-            type="submit" 
-            disabled={saving}
-            className={`w-full rounded-2xl h-12 text-sm font-bold shadow-xl dark:shadow-none transition-all flex items-center justify-center gap-2 group ${
-              saved 
-                ? 'bg-green-600 hover:bg-green-600 text-white' 
-                : 'bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white active:scale-[0.98] text-white dark:text-zinc-900'
-            }`}
-          >
-            {saving ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : saved ? (
-              <>
-                <Check className="w-4 h-4" /> Salvo!
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" /> Salvar Perfil
-              </>
-            )}
-          </Button>
+          <div className="pt-2">
+            <Button 
+              type="submit" 
+              disabled={saving}
+              className={`w-full flex items-center justify-center gap-2 text-sm font-semibold px-5 py-6 rounded-2xl shadow-sm transition-all active:scale-[0.99] disabled:opacity-60 ${
+                saved 
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                  : 'bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-900'
+              }`}
+            >
+              {saving ? (
+                <div className="w-5 h-5 border-2 border-zinc-400 dark:border-zinc-600 border-t-zinc-100 dark:border-t-zinc-900 rounded-full animate-spin" />
+              ) : saved ? (
+                <>
+                  <Check className="w-4 h-4" /> Perfil Salvo
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" /> Salvar Alterações
+                </>
+              )}
+            </Button>
+          </div>
         </form>
       </div>
 
       {/* Strava Integration Card */}
-      <div className="relative overflow-hidden bg-white/70 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.8rem] p-6 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40">
+      <div className="relative overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 transition-all hover:shadow-md hover:border-orange-200 dark:hover:border-orange-500/30 flex flex-col mb-4">
         {/* Decorative background element */}
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-[#FC4C02]/10 dark:bg-[#FC4C02]/20 rounded-full blur-3xl pointer-events-none" />
         
         <div className="relative z-10 flex items-center mb-5">
           <div className="flex items-center gap-3">
-             <div className="w-12 h-12 rounded-2xl bg-[#FC4C02]/10 dark:bg-[#FC4C02]/20 flex items-center justify-center">
+             <div className="w-12 h-12 rounded-2xl bg-[#FC4C02]/10 flex items-center justify-center border border-[#FC4C02]/20">
               <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#FC4C02]" fill="currentColor">
                 <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
               </svg>
              </div>
              <div>
-               <h3 className="text-lg font-extrabold text-zinc-900 dark:text-zinc-50 tracking-tight">Strava</h3>
-               <p className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Integração</p>
+               <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Strava</h3>
+               <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Integração</p>
              </div>
             {isStravaConnected && (
-               <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ml-3 flex items-center gap-1">
-                 <Check className="w-3 h-3" /> Conectado
-               </span>
+               <div className="flex items-center gap-1.5 ml-3 border text-xs font-semibold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-500/20 px-3 py-1.5 rounded-lg">
+                 <Check className="w-3.5 h-3.5" /> Conectado
+               </div>
             )}
            </div>
          </div>
          
-         <p className="relative z-10 text-sm text-zinc-600 dark:text-zinc-400 font-medium mb-6 leading-relaxed">
+         <p className="relative z-10 text-sm text-zinc-600 dark:text-zinc-400 font-medium mb-6">
            Conecte sua conta do Strava para sincronizar automaticamente suas atividades e validar desafios no clube.
          </p>
          
@@ -429,7 +427,7 @@ export function ProfilePage() {
              <button
                onClick={conectarStrava}
                disabled={stravaConnecting}
-               className="flex items-center justify-center gap-2 bg-[#FC4C02] hover:bg-[#E04400] active:scale-[0.98] text-white text-sm font-bold px-5 py-3.5 rounded-2xl shadow-xl shadow-orange-500/20 transition-all disabled:opacity-60 flex-1"
+               className="w-full sm:flex-1 flex items-center justify-center gap-2 bg-[#FC4C02] hover:bg-[#E04400] active:scale-[0.99] text-white text-sm font-semibold px-5 py-3.5 rounded-2xl shadow-sm transition-all disabled:opacity-60"
              >
                {stravaConnecting ? (
                  <><Loader2 className="w-4 h-4 animate-spin" /> Conectando...</>
@@ -438,13 +436,13 @@ export function ProfilePage() {
                )}
              </button>
            ) : (
-             <div className="flex-1 flex items-center gap-3 px-5 py-3.5 bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30 rounded-2xl">
-               <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-800/40 flex items-center justify-center">
-                 <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+             <div className="flex-1 flex items-center gap-3 px-5 py-3.5 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-900/30 rounded-2xl">
+               <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-800/40 flex items-center justify-center flex-shrink-0">
+                 <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                </div>
                <div>
-                  <p className="text-sm font-bold text-green-900 dark:text-green-300">Conta Sincronizada</p>
-                  <p className="text-[11px] text-green-700/70 dark:text-green-400/70 font-medium">Suas corridas são atualizadas automaticamente.</p>
+                  <p className="text-sm font-bold text-emerald-900 dark:text-emerald-300 truncate">Conta Sincronizada</p>
+                  <p className="text-xs text-emerald-700/70 dark:text-emerald-400/70 font-medium truncate">Suas corridas atualizam automaticamente.</p>
                </div>
              </div>
            )}
@@ -453,7 +451,7 @@ export function ProfilePage() {
              <button
                onClick={desconectarStrava}
                disabled={stravaDisconnecting}
-               className="flex items-center justify-center gap-2 bg-zinc-100 dark:bg-zinc-900/50 hover:bg-red-50 dark:hover:bg-red-950/30 text-zinc-500 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400 text-sm font-bold px-5 py-3.5 rounded-2xl transition-all disabled:opacity-60 active:scale-[0.98] border border-transparent hover:border-red-200 dark:hover:border-red-900/50"
+               className="flex items-center justify-center gap-2 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-red-50 dark:hover:bg-red-500/10 text-zinc-500 hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400 text-sm font-semibold px-5 py-3.5 rounded-2xl transition-all disabled:opacity-60 active:scale-[0.99] border border-zinc-200 dark:border-zinc-700 hover:border-red-200 dark:hover:border-red-500/20"
              >
                {stravaDisconnecting ? (
                  <><Loader2 className="w-4 h-4 animate-spin" /> Desconectando...</>
@@ -483,31 +481,31 @@ export function ProfilePage() {
                      href={activity.stravaUrl}
                      target="_blank"
                      rel="noopener noreferrer"
-                     className="block bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 rounded-2xl p-4 border border-zinc-200/60 dark:border-zinc-700/50 transition-colors group"
+                     className="block bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl p-4 transition-all group"
                    >
-                     <div className="flex justify-between items-start mb-2">
+                     <div className="flex justify-between items-start mb-3">
                        <div>
                          <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-[#FC4C02] transition-colors">{activity.name}</p>
-                         <div className="flex items-center gap-1.5 text-[10px] font-semibold text-zinc-500 mt-1 uppercase tracking-wider">
-                           <Calendar className="w-3 h-3" />
+                         <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 mt-1 uppercase tracking-wider">
+                           <Calendar className="w-3.5 h-3.5" />
                            {new Date(activity.startDate).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
                          </div>
                        </div>
-                       <ExternalLink className="w-4 h-4 text-zinc-400 group-hover:text-[#FC4C02] transition-colors" />
+                       <ExternalLink className="w-4 h-4 text-zinc-400 group-hover:text-[#FC4C02] transition-colors mt-0.5" />
                      </div>
                      
-                     <div className="grid grid-cols-3 gap-2 mt-3 p-3 bg-white dark:bg-zinc-950/50 rounded-xl shadow-sm border border-zinc-100 dark:border-zinc-800/50">
+                     <div className="grid grid-cols-3 gap-2 p-3 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
                        <div className="text-center">
                          <span className="block text-[10px] text-zinc-400 font-bold uppercase mb-0.5">Distância</span>
-                         <span className="text-sm font-black text-zinc-800 dark:text-zinc-200">{activity.distanceKm} km</span>
+                         <span className="text-sm font-black text-zinc-900 dark:text-white">{activity.distanceKm} km</span>
                        </div>
-                       <div className="text-center border-l border-r border-zinc-100 dark:border-zinc-800/50">
+                       <div className="text-center border-l border-r border-zinc-100 dark:border-zinc-800">
                          <span className="block text-[10px] text-zinc-400 font-bold uppercase mb-0.5">Pace</span>
-                         <span className="text-sm font-black text-zinc-800 dark:text-zinc-200">{activity.paceFormatted}/km</span>
+                         <span className="text-sm font-black text-zinc-900 dark:text-white">{activity.paceFormatted}/km</span>
                        </div>
                        <div className="text-center">
                          <span className="block text-[10px] text-zinc-400 font-bold uppercase mb-0.5">Tempo</span>
-                         <span className="text-sm font-black text-zinc-800 dark:text-zinc-200">{Math.round(activity.movingTimeMinutes)} min</span>
+                         <span className="text-sm font-black text-zinc-900 dark:text-white">{Math.round(activity.movingTimeMinutes)} min</span>
                        </div>
                      </div>
                    </a>

@@ -201,7 +201,7 @@ export function ClubDetailsPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="w-8 h-8 border-4 border-pastel-lavender border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-4 border-fuchsia-600 border-t-transparent rounded-full animate-spin" />
     </div>
   )
   if (!club) return null
@@ -218,11 +218,11 @@ export function ClubDetailsPage() {
       {/* Hero */}
       <div className="flex flex-col items-center mb-6">
         <label className={`relative ${isAdmin ? 'cursor-pointer group' : ''}`}>
-          <div className="w-28 h-28 rounded-[1.6rem] bg-pastel-green/30 dark:bg-green-900/30 shadow-clay dark:shadow-none dark:border dark:border-green-800/30 overflow-hidden flex items-center justify-center mb-4 relative">
+          <div className="w-28 h-28 rounded-3xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 overflow-hidden flex items-center justify-center mb-4 relative shadow-sm">
             {club.logo_url ? (
               <img src={club.logo_url} alt={club.name} className="w-full h-full object-cover" />
             ) : (
-              <span className="font-black text-4xl text-green-800 dark:text-green-300">{club.name.charAt(0)}</span>
+              <span className="font-bold text-4xl text-emerald-600 dark:text-emerald-400">{club.name.charAt(0)}</span>
             )}
             {isAdmin && (
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center rounded-[1.6rem]">
@@ -239,9 +239,9 @@ export function ClubDetailsPage() {
         </label>
 
         {editing ? (
-          <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="text-center text-2xl font-extrabold rounded-2xl h-12 bg-zinc-50/80 dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-700/50 shadow-inner dark:shadow-none max-w-xs" />
+          <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="text-center text-2xl font-bold rounded-2xl h-12 bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 shadow-sm focus:ring-2 focus:ring-emerald-500/50 max-w-xs transition-all" />
         ) : (
-          <h1 className="text-2xl font-extrabold tracking-tight text-center text-zinc-900 dark:text-zinc-50">{club.name}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-center text-zinc-900 dark:text-zinc-50">{club.name}</h1>
         )}
 
         {editing ? (
@@ -254,9 +254,9 @@ export function ClubDetailsPage() {
             />
           </div>
         ) : club.cidade ? (
-          <div className="flex items-center gap-1 mt-2 bg-pastel-green/30 dark:bg-green-900/30 px-3 py-1 rounded-full">
-            <MapPin className="w-3 h-3 text-green-700 dark:text-green-400" />
-            <span className="text-xs font-bold text-green-800 dark:text-green-300">{club.cidade}</span>
+          <div className="flex items-center gap-1.5 mt-2 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-200/50 dark:border-emerald-500/20">
+            <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">{club.cidade}</span>
           </div>
         ) : null}
 
@@ -277,13 +277,13 @@ export function ClubDetailsPage() {
             <button
               onClick={handleJoin}
               disabled={joiningOrLeaving}
-              className="flex items-center gap-2 bg-fuchsia-600 hover:bg-fuchsia-700 active:scale-95 text-white text-xs font-bold px-5 py-2.5 rounded-full shadow-xl transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-2 bg-fuchsia-600 hover:bg-fuchsia-700 active:scale-[0.99] text-white text-sm font-semibold px-5 py-2.5 rounded-2xl shadow-sm transition-all disabled:opacity-60"
             >
               {joiningOrLeaving ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <UserPlus className="w-3.5 h-3.5" /> Participar
+                  <UserPlus className="w-4 h-4" /> Participar
                 </>
               )}
             </button>
@@ -293,34 +293,34 @@ export function ClubDetailsPage() {
             <button
               onClick={handleLeave}
               disabled={joiningOrLeaving}
-              className="flex items-center gap-2 bg-white/60 dark:bg-zinc-800/60 backdrop-blur-sm text-red-500 hover:text-red-600 text-xs font-bold px-5 py-2.5 rounded-full shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 transition-all disabled:opacity-50 active:scale-95"
+              className="flex items-center justify-center gap-2 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-red-50 dark:hover:bg-red-500/10 text-red-500 hover:text-red-600 text-sm font-semibold px-5 py-2.5 rounded-2xl border border-zinc-200 dark:border-zinc-700 hover:border-red-200 dark:hover:border-red-500/20 transition-all disabled:opacity-60 active:scale-[0.99]"
             >
               {joiningOrLeaving ? (
                 <div className="w-4 h-4 border-2 border-red-300 border-t-red-500 rounded-full animate-spin" />
               ) : (
                 <>
-                  <LogOut className="w-3.5 h-3.5" /> Sair do Clube
+                  <LogOut className="w-4 h-4" /> Sair do Clube
                 </>
               )}
             </button>
           )}
 
           {isMember && !isAdmin && (
-            <span className="flex items-center gap-1.5 bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400 text-xs font-bold px-3 py-2 rounded-full">
+            <span className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold px-3 py-2 rounded-lg border border-emerald-200/50 dark:border-emerald-500/20">
               <Check className="w-3.5 h-3.5" /> Membro
             </span>
           )}
 
           {isAdmin && !editing && (
-            <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 bg-white/60 dark:bg-zinc-800/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 transition-colors">
-              <Pencil className="w-3.5 h-3.5" /> Editar Clube
+            <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-2 rounded-xl hover:shadow-sm transition-all">
+              <Pencil className="w-3.5 h-3.5" /> Editar
             </button>
           )}
 
           {isAdmin && !editing && !confirmDelete && (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-600 bg-white/60 dark:bg-zinc-800/60 backdrop-blur-sm px-4 py-2 rounded-full shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 transition-colors"
+              className="flex items-center gap-1.5 text-xs font-semibold text-red-500 hover:text-red-600 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:border-red-200 dark:hover:border-red-500/30 px-4 py-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
             >
               <Trash2 className="w-3.5 h-3.5" /> Apagar
             </button>
@@ -373,103 +373,107 @@ export function ClubDetailsPage() {
       {admin && (
         <Link
           to={`/runners/${admin.id}`}
-          className="block bg-pastel-lavender/30 dark:bg-purple-950/40 backdrop-blur-sm rounded-[1.4rem] p-4 shadow-clay-sm dark:shadow-none dark:border dark:border-purple-900/30 mb-4 flex items-center gap-3 hover:scale-[1.01] active:scale-[0.99] transition-all"
+          className="block bg-fuchsia-50 dark:bg-fuchsia-500/5 border border-fuchsia-100 dark:border-fuchsia-500/20 rounded-3xl p-5 mb-6 flex items-center gap-4 hover:shadow-md hover:border-fuchsia-200 dark:hover:border-fuchsia-500/30 transition-all group"
         >
-          <div className="w-10 h-10 rounded-xl bg-white/50 dark:bg-white/10 shadow-inner dark:shadow-none overflow-hidden flex items-center justify-center flex-shrink-0">
-            {admin.photo_url ? <img src={admin.photo_url} alt={admin.name} className="w-full h-full object-cover" /> : <Crown className="w-5 h-5 text-purple-600 dark:text-purple-400" />}
+          <div className="w-12 h-12 rounded-2xl bg-white dark:bg-zinc-800 border border-fuchsia-100/50 dark:border-fuchsia-500/20 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
+            {admin.photo_url ? <img src={admin.photo_url} alt={admin.name} className="w-full h-full object-cover" /> : <Crown className="w-5 h-5 text-fuchsia-600 dark:text-fuchsia-400" />}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-bold text-purple-700/60 dark:text-purple-400/60 uppercase tracking-wider">Administrador</p>
-            <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">{admin.name || 'Corredor'}</p>
-            {admin.cidade && <p className="text-[11px] text-zinc-400 dark:text-zinc-500 font-medium">{admin.cidade}</p>}
+            <p className="text-[10px] font-bold text-fuchsia-700/60 dark:text-fuchsia-400/60 uppercase tracking-wider mb-0.5">Administrador</p>
+            <p className="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">{admin.name || 'Corredor'}</p>
+            {admin.cidade && <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium truncate mt-0.5">{admin.cidade}</p>}
           </div>
           {admin.pace_medio && (
-            <div className="bg-white/50 dark:bg-white/10 rounded-lg px-2.5 py-1.5 flex-shrink-0">
-              <p className="text-[9px] font-bold text-zinc-400 uppercase">Pace</p>
-              <p className="text-xs font-black text-zinc-700 dark:text-zinc-200">{admin.pace_medio}</p>
+            <div className="bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-xl px-3 py-2 flex flex-col items-center justify-center flex-shrink-0 shadow-sm">
+              <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Pace</p>
+              <p className="text-sm font-black text-zinc-900 dark:text-white">{admin.pace_medio}</p>
             </div>
           )}
         </Link>
       )}
       
       {/* About Card */}
-      <div className="bg-white/70 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.6rem] p-5 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 mb-4">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-7 h-7 rounded-lg bg-pastel-blue/40 dark:bg-blue-900/40 flex items-center justify-center">
-            <FileText className="w-3.5 h-3.5 text-blue-800 dark:text-blue-300" />
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+            <FileText className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
           </div>
           <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Sobre</h2>
         </div>
         {editing ? (
-          <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={4} className="w-full rounded-2xl p-4 text-sm bg-zinc-50/80 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-700/50 shadow-inner dark:shadow-none focus:outline-none focus:ring-2 focus:ring-pastel-lavender/50 dark:focus:ring-purple-500/30 transition-all resize-none dark:text-zinc-100" />
+          <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={4} className="w-full rounded-2xl p-4 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 transition-all resize-none dark:text-zinc-100" />
         ) : (
           <p className="text-zinc-600 dark:text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap">{club.description}</p>
         )}
       </div>
 
       {/* Gamification Navigation */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-2 gap-4 mb-6">
         <Link
           to={`/clubs/${id}/challenges`}
-          className="bg-pastel-green/40 dark:bg-green-950/40 backdrop-blur-sm rounded-[1.4rem] p-4 shadow-clay-sm dark:shadow-none dark:border dark:border-green-900/30 flex items-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all"
+          className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-500/30 flex flex-col items-start gap-4 transition-all group"
         >
-          <div className="w-10 h-10 rounded-xl bg-white/50 dark:bg-white/10 flex items-center justify-center flex-shrink-0">
-            <Target className="w-5 h-5 text-green-700 dark:text-green-400" />
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center border border-emerald-100 dark:border-emerald-500/20">
+            <Target className="w-6 h-6 text-emerald-500" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-green-900 dark:text-green-200">Desafios</p>
-            <p className="text-[10px] text-green-700/60 dark:text-green-400/60 font-medium">Metas e conquistas</p>
+          <div className="w-full">
+            <div className="flex justify-between items-center mb-1">
+              <p className="text-base font-bold text-zinc-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Desafios</p>
+              <ChevronRight className="w-4 h-4 text-zinc-300 dark:text-zinc-600 group-hover:text-emerald-500 transition-colors" />
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Metas e conquistas</p>
           </div>
-          <ChevronRight className="w-4 h-4 text-green-600/40 dark:text-green-500/40 flex-shrink-0" />
         </Link>
         <Link
           to={`/clubs/${id}/rewards`}
-          className="bg-fuchsia-200/40 dark:bg-fuchsia-950/40 backdrop-blur-sm rounded-[1.4rem] p-4 shadow-clay-sm dark:shadow-none dark:border dark:border-fuchsia-900/30 flex items-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all"
+          className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 hover:shadow-md hover:border-fuchsia-200 dark:hover:border-fuchsia-500/30 flex flex-col items-start gap-4 transition-all group"
         >
-          <div className="w-10 h-10 rounded-xl bg-white/50 dark:bg-white/10 flex items-center justify-center flex-shrink-0">
-            <Gift className="w-5 h-5 text-fuchsia-700 dark:text-fuchsia-400" />
+          <div className="w-12 h-12 rounded-2xl bg-fuchsia-50 dark:bg-fuchsia-500/10 flex items-center justify-center border border-fuchsia-100 dark:border-fuchsia-500/20">
+            <Gift className="w-6 h-6 text-fuchsia-500" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-fuchsia-900 dark:text-fuchsia-200">Prêmios</p>
-            <p className="text-[10px] text-fuchsia-700/60 dark:text-fuchsia-400/60 font-medium">Recompensas</p>
+          <div className="w-full">
+            <div className="flex justify-between items-center mb-1">
+              <p className="text-base font-bold text-zinc-900 dark:text-white group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">Prêmios</p>
+              <ChevronRight className="w-4 h-4 text-zinc-300 dark:text-zinc-600 group-hover:text-fuchsia-500 transition-colors" />
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Recompensas</p>
           </div>
-          <ChevronRight className="w-4 h-4 text-fuchsia-600/40 dark:text-fuchsia-500/40 flex-shrink-0" />
         </Link>
       </div>
 
       {/* Rules Card */}
-      <div className="bg-pastel-peach/30 dark:bg-orange-950/30 backdrop-blur-sm rounded-[1.6rem] p-5 shadow-clay-sm dark:shadow-none dark:border dark:border-orange-900/20 mb-4">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-7 h-7 rounded-lg bg-orange-200/60 dark:bg-orange-900/40 flex items-center justify-center">
-            <ShieldCheck className="w-3.5 h-3.5 text-orange-800 dark:text-orange-300" />
+      <div className="bg-orange-50/50 dark:bg-orange-950/10 border border-orange-100 dark:border-orange-900/20 rounded-3xl p-6 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+            <ShieldCheck className="w-4 h-4 text-orange-600 dark:text-orange-400" />
           </div>
           <h2 className="text-sm font-bold uppercase tracking-wider text-orange-800/70 dark:text-orange-400/70">Regras do Clube</h2>
         </div>
         {editing ? (
-          <textarea value={editRegras} onChange={(e) => setEditRegras(e.target.value)} rows={3} className="w-full rounded-2xl p-4 text-sm bg-white/80 dark:bg-zinc-900/60 border border-orange-200/80 dark:border-orange-900/30 shadow-inner dark:shadow-none focus:outline-none focus:ring-2 focus:ring-pastel-peach/50 dark:focus:ring-orange-500/30 transition-all resize-none dark:text-zinc-100" />
+          <textarea value={editRegras} onChange={(e) => setEditRegras(e.target.value)} rows={3} className="w-full rounded-2xl p-4 text-sm bg-white dark:bg-zinc-800 border border-orange-200 dark:border-orange-900/30 focus:outline-none focus:ring-2 focus:ring-orange-500/30 transition-all resize-none dark:text-zinc-100 shadow-sm" />
         ) : (
-          <div className="bg-white/50 dark:bg-black/20 rounded-xl p-4">
+          <div className="bg-white/60 dark:bg-black/20 rounded-2xl p-4 border border-orange-100/50 dark:border-orange-900/10">
             <p className="text-orange-900/80 dark:text-orange-200/80 text-sm font-medium leading-relaxed whitespace-pre-wrap">{club.regras}</p>
           </div>
         )}
       </div>
 
       {/* Members Section */}
-      <div className="bg-white/70 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.6rem] p-5 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6">
+        <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-fuchsia-200/50 dark:bg-fuchsia-900/40 flex items-center justify-center">
-              <Users className="w-3.5 h-3.5 text-fuchsia-800 dark:text-fuchsia-300" />
+            <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+              <Users className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
             </div>
             <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Membros</h2>
           </div>
-          <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-700/50 px-2.5 py-1 rounded-full">
+          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-full">
             {members.length}
           </span>
         </div>
 
         {members.length === 0 ? (
-          <div className="text-center py-4">
+          <div className="text-center py-6 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
             <UserCircle className="w-8 h-8 mx-auto text-zinc-300 dark:text-zinc-600 mb-2" />
             <p className="text-zinc-400 dark:text-zinc-500 text-xs font-medium">Nenhum membro ainda. Seja o primeiro!</p>
           </div>
@@ -479,34 +483,34 @@ export function ClubDetailsPage() {
               <Link
                 key={member.id}
                 to={`/runners/${member.id}`}
-                className="flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700/40 active:scale-[0.98] transition-all"
+                className="flex items-center gap-4 p-3 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:shadow-sm border border-transparent hover:border-zinc-100 dark:hover:border-zinc-800 active:scale-[0.99] transition-all"
               >
-                <div className="w-10 h-10 rounded-xl bg-fuchsia-200/40 dark:bg-fuchsia-900/30 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-inner dark:shadow-none">
+                <div className="w-12 h-12 rounded-2xl bg-fuchsia-50 dark:bg-fuchsia-500/10 border border-fuchsia-100/50 dark:border-fuchsia-500/20 overflow-hidden flex items-center justify-center flex-shrink-0">
                   {member.photo_url ? (
                     <img src={member.photo_url} alt={member.name} className="w-full h-full object-cover" />
                   ) : (
-                    <UserCircle className="w-5 h-5 text-fuchsia-400 dark:text-fuchsia-500" />
+                    <UserCircle className="w-6 h-6 text-fuchsia-400 dark:text-fuchsia-500" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate">{member.name || 'Corredor'}</p>
-                  <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold truncate group-hover:text-fuchsia-600 transition-colors">{member.name || 'Corredor'}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
                     {member.cidade && (
-                      <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-medium flex items-center gap-0.5">
-                        <MapPin className="w-2.5 h-2.5" /> {member.cidade}
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-1">
+                        <MapPin className="w-3 h-3" /> {member.cidade}
                       </span>
                     )}
                     {member.pace_medio && (
-                      <span className="text-[11px] text-fuchsia-500 dark:text-fuchsia-400 font-semibold">
+                      <span className="text-[11px] text-fuchsia-600 dark:text-fuchsia-400 font-semibold bg-fuchsia-50 dark:bg-fuchsia-500/10 px-1.5 py-0.5 rounded-md">
                         {member.pace_medio}
                       </span>
                     )}
                   </div>
                 </div>
                 {member.id === club.admin_id && (
-                  <span className="text-[9px] font-bold text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded-full uppercase">Admin</span>
+                  <span className="text-[9px] font-bold text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-100 dark:bg-fuchsia-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider">Admin</span>
                 )}
-                <ChevronRight className="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600 flex-shrink-0" />
+                <ChevronRight className="w-4 h-4 text-zinc-300 dark:text-zinc-600 flex-shrink-0" />
               </Link>
             ))}
           </div>

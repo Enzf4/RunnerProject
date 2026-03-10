@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { fetchWithAuth } from '../lib/api'
-import { Check, X, ArrowLeft, Target, Calendar, Zap, RefreshCw, Trophy, Plus, Clock, TrendingUp, Gift, Award, ChevronDown, ChevronUp, AlignLeft } from 'lucide-react'
+import { Check, X, ArrowLeft, Target, Calendar, Zap, RefreshCw, Trophy, Plus, Clock, TrendingUp, Gift, Award, ChevronDown, ChevronUp, AlignLeft, Edit, Trash2 } from 'lucide-react'
 import { useToast } from '../components/Toast'
 
 export function ChallengesPage() {
@@ -200,163 +200,211 @@ export function ChallengesPage() {
     }
   }
 
+  const handleDeleteChallenge = async (challengeId) => {
+    if (!window.confirm('Tem certeza que deseja excluir este desafio? Todos os prêmios vinculados e progressos serão perdidos.')) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('challenges')
+        .delete()
+        .eq('id', challengeId)
+
+      if (error) throw error
+
+      setChallenges(prev => prev.filter(c => c.id !== challengeId))
+      toast.success('Desafio excluído com sucesso!')
+    } catch (err) {
+      console.error('Erro ao excluir desafio:', err)
+      toast.error('Erro ao excluir desafio.')
+    }
+  }
+
   const uniqueRewards = Array.from(new Map(rewards.map(r => [r.title, r])).values())
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="w-8 h-8 border-4 border-pastel-lavender border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-4 border-fuchsia-600 border-t-transparent rounded-full animate-spin" />
     </div>
   )
 
   return (
-    <div className="px-5 pt-6 pb-4 animate-fade-in-up">
+    <div className="px-5 pt-8 pb-12 animate-in fade-in duration-500">
       <button
         onClick={() => navigate(`/clubs/${clubId}`)}
-        className="flex items-center gap-1.5 text-sm font-semibold text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors mb-6"
+        className="flex items-center gap-2 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors mb-8"
       >
         <ArrowLeft className="w-4 h-4" /> {club?.name || 'Voltar'}
       </button>
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-end justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">Desafios</h1>
-          <p className="text-zinc-400 dark:text-zinc-500 mt-1 text-sm font-medium">Sincronize corridas e conquiste prêmios.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white mb-2">Desafios</h1>
+          <p className="text-zinc-500 dark:text-zinc-400 text-sm">Sincronize corridas e conquiste prêmios.</p>
         </div>
         {isAdmin && (
           <Link
             to={`/clubs/${clubId}/challenges/new`}
-            className="flex items-center gap-1.5 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-bold px-4 py-2.5 rounded-full shadow-xl transition-all active:scale-95"
+            className="flex items-center gap-2 bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium px-5 py-2.5 rounded-xl shadow-sm transition-all active:scale-95"
           >
-            <Plus className="w-3.5 h-3.5" /> Criar
+            <Plus className="w-4 h-4" /> Novo Desafio
           </Link>
         )}
       </div>
 
       {/* Challenges List */}
       {challenges.length === 0 ? (
-        <div className="bg-white/70 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.6rem] p-8 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 text-center">
-          <Target className="w-10 h-10 mx-auto text-zinc-300 dark:text-zinc-600 mb-3" />
-          <p className="text-zinc-400 dark:text-zinc-500 text-sm font-medium">Nenhum desafio criado ainda.</p>
+        <div className="bg-white dark:bg-zinc-900 rounded-3xl p-10 border border-zinc-200 dark:border-zinc-800 text-center shadow-sm">
+          <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Target className="w-8 h-8 text-zinc-400 dark:text-zinc-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">Sem desafios criados</h3>
+          <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-6 max-w-sm mx-auto">
+            Nenhum desafio foi criado neste clube ainda.
+          </p>
           {isAdmin && (
-            <Link to={`/clubs/${clubId}/challenges/new`} className="text-xs font-bold text-zinc-900 dark:text-zinc-200 mt-2 inline-block hover:underline">
-              Criar o primeiro →
+            <Link to={`/clubs/${clubId}/challenges/new`} className="inline-flex items-center justify-center bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors">
+              Criar o primeiro desafio
             </Link>
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {challenges.map((challenge) => {
             const active = isActive(challenge)
             return (
               <div
                 key={challenge.id}
-                className="bg-white/70 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.6rem] p-5 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 relative overflow-hidden"
+                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 transition-all hover:shadow-md hover:border-fuchsia-200 dark:hover:border-fuchsia-500/30 flex flex-col"
               >
-                {/* Status Badge */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? 'bg-green-200/60 dark:bg-green-900/40' : 'bg-zinc-200/60 dark:bg-zinc-700/40'}`}>
-                      <Target className={`w-4 h-4 ${active ? 'text-green-700 dark:text-green-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
-                    </div>
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${active ? 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' : 'bg-zinc-100 dark:bg-zinc-700/50 text-zinc-400 dark:text-zinc-500'}`}>
-                      {active ? 'Ativo' : 'Encerrado'}
-                    </span>
+                {/* Status Badge & Admin Actions */}
+                <div className="flex items-center justify-between mb-5">
+                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold uppercase tracking-wider ${active ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-500/20' : 'bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 border-zinc-200/50 dark:border-zinc-700/50'}`}>
+                    <Target className="w-3.5 h-3.5" />
+                    {active ? 'Ativo' : 'Encerrado'}
                   </div>
-                  <div className="flex items-center gap-1.5 text-zinc-400 dark:text-zinc-500">
-                    <TrendingUp className="w-3 h-3" />
-                    <span className="text-[10px] font-bold uppercase">{typeLabel(challenge.challenge_type)}</span>
+                  
+                  <div className="flex items-center gap-2">
+                    {isAdmin && (
+                      <div className="flex items-center gap-1 mr-1">
+                        <button
+                          onClick={() => {
+                            toast.success('Em breve! Edição será implementada na próxima atualização.')
+                          }}
+                          className="p-1.5 text-zinc-400 hover:text-fuchsia-600 dark:text-zinc-500 dark:hover:text-fuchsia-400 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-500/10 rounded-lg transition-colors"
+                          title="Editar"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteChallenge(challenge.id)}
+                          className="p-1.5 text-zinc-400 hover:text-red-600 dark:text-zinc-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-1.5 rounded-lg border border-zinc-100 dark:border-zinc-800">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      <span className="text-xs font-semibold uppercase tracking-wider">{typeLabel(challenge.challenge_type)}</span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Title */}
-                <h3 className="text-lg font-extrabold text-zinc-900 dark:text-zinc-50 mb-2">{challenge.title}</h3>
+                <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-5">{challenge.title}</h3>
 
                 {/* Stats Row */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-pastel-lavender/30 dark:bg-purple-900/30 rounded-xl px-3 py-2 flex items-center gap-1.5">
-                    <Zap className="w-3 h-3 text-purple-700 dark:text-purple-400" />
-                    <span className="text-xs font-black text-purple-900 dark:text-purple-200">
-                      {challenge.target_value} {typeUnit(challenge.challenge_type)}
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800 flex items-center justify-center gap-2">
+                    <Zap className="w-4 h-4 text-fuchsia-500" />
+                    <span className="text-sm font-bold text-zinc-900 dark:text-white">
+                      {challenge.target_value} <span className="text-zinc-500 text-xs font-medium">{typeUnit(challenge.challenge_type)}</span>
                     </span>
                   </div>
-                  <div className="bg-pastel-peach/30 dark:bg-orange-900/30 rounded-xl px-3 py-2 flex items-center gap-1.5">
-                    <Calendar className="w-3 h-3 text-orange-700 dark:text-orange-400" />
-                    <span className="text-[11px] font-semibold text-orange-900 dark:text-orange-200">
-                      {new Date(challenge.start_date).toLocaleDateString('pt-BR')} — {new Date(challenge.end_date).toLocaleDateString('pt-BR')}
+                  <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800 flex items-center justify-center gap-2">
+                    <Calendar className="w-4 h-4 text-fuchsia-500" />
+                    <span className="text-xs font-semibold text-zinc-900 dark:text-white text-center leading-tight">
+                      {new Date(challenge.start_date).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})} <br />
+                      <span className="text-zinc-400">até</span> <br />
+                      {new Date(challenge.end_date).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})}
                     </span>
                   </div>
                 </div>
 
                 {/* Rewards Toggle */}
+                <div className="mt-auto">
                 {(() => {
                   const challengeRewards = rewardsForChallenge(challenge.id)
                   const isExpanded = expandedRewards[challenge.id]
                   return (
-                    <div className="mb-3">
+                    <div className="mb-4">
                       <button
                         onClick={() => toggleRewards(challenge.id)}
-                        className="w-full flex items-center justify-between gap-2 bg-amber-50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/30 text-amber-800 dark:text-amber-400 text-sm font-bold px-4 py-2.5 rounded-2xl transition-all active:scale-[0.98]"
+                        className="w-full flex items-center justify-between bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-semibold px-5 py-3 rounded-2xl transition-all active:scale-[0.99]"
                       >
                         <span className="flex items-center gap-2">
-                          <Gift className="w-4 h-4" />
+                          <Gift className="w-4 h-4 text-fuchsia-500" />
                           {challengeRewards.length > 0
                             ? `${challengeRewards.length} Prêmio${challengeRewards.length > 1 ? 's' : ''}`
-                            : 'Prêmios'}
+                            : 'Prêmios (0)'}
                         </span>
-                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        {isExpanded ? <ChevronUp className="w-4 h-4 text-zinc-400" /> : <ChevronDown className="w-4 h-4 text-zinc-400" />}
                       </button>
 
                       {isExpanded && (
-                        <div className="mt-2 rounded-2xl overflow-hidden border border-amber-100 dark:border-amber-900/30">
+                        <div className="mt-3 rounded-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
                           {challengeRewards.length === 0 ? (
-                            <div className="flex flex-col items-center gap-1.5 py-5 bg-amber-50/60 dark:bg-amber-950/10">
-                              <Gift className="w-6 h-6 text-amber-300 dark:text-amber-700" />
-                              <p className="text-xs font-medium text-amber-600 dark:text-amber-500">Nenhum prêmio vinculado a este desafio.</p>
+                            <div className="flex flex-col items-center gap-2 py-6 text-center">
+                              <Gift className="w-6 h-6 text-zinc-300 dark:text-zinc-600" />
+                              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Nenhum prêmio vinculado.</p>
                               {isAdmin && active && (
                                 <button
                                   onClick={() => openRewardModal(challenge)}
-                                  className="text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline mt-1"
+                                  className="text-sm font-medium text-fuchsia-600 dark:text-fuchsia-400 hover:text-fuchsia-700 dark:hover:text-fuchsia-300 transition-colors mt-1"
                                 >
-                                  Adicionar prêmio →
+                                  Adicionar prêmio
                                 </button>
                               )}
                             </div>
                           ) : (
-                            <div className="divide-y divide-amber-100 dark:divide-amber-900/30">
+                            <div className="divide-y divide-zinc-100 dark:divide-zinc-800 text-left">
                               {challengeRewards.map(reward => (
                                 <button
                                   key={reward.id}
                                   onClick={() => setSelectedReward(reward)}
-                                  className="w-full flex items-center gap-3 px-4 py-3 bg-amber-50/60 dark:bg-amber-950/10 text-left hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors active:bg-amber-100 dark:active:bg-amber-900/40"
+                                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group"
                                 >
                                   {reward.image_url ? (
                                     <img
                                       src={reward.image_url}
                                       alt={reward.title}
-                                      className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
+                                      className="w-10 h-10 rounded-xl object-cover flex-shrink-0 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50"
                                     />
                                   ) : (
-                                    <div className="w-10 h-10 rounded-xl bg-amber-200/50 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
-                                      <Award className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                                    <div className="w-10 h-10 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-500/10 flex items-center justify-center flex-shrink-0 border border-fuchsia-100/50 dark:border-fuchsia-500/20">
+                                      <Award className="w-5 h-5 text-fuchsia-500" />
                                     </div>
                                   )}
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50 truncate">{reward.title}</p>
-                                    <p className="text-[10px] font-semibold text-amber-600 dark:text-amber-500">
-                                      Limite: {reward.monthly_limit || 10}/mês
+                                  <div className="flex-1 min-w-0 flex flex-col">
+                                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">{reward.title}</p>
+                                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                                      {reward.monthly_limit || 10} disp./mês
                                     </p>
                                   </div>
-                                  <Trophy className="w-4 h-4 text-amber-400 dark:text-amber-500 flex-shrink-0" />
+                                  <Trophy className="w-4 h-4 text-zinc-300 dark:text-zinc-600 group-hover:text-fuchsia-500 transition-colors flex-shrink-0" />
                                 </button>
                               ))}
                               {isAdmin && active && (
-                                <div className="p-3 bg-amber-50/40 dark:bg-amber-950/5 flex justify-center border-t border-amber-100 dark:border-amber-900/30">
+                                <div className="p-3 bg-zinc-50 dark:bg-zinc-800/30 flex justify-center border-t border-zinc-100 dark:border-zinc-800">
                                   <button
                                     onClick={() => openRewardModal(challenge)}
-                                    className="flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors bg-white/50 dark:bg-black/20 px-4 py-2 rounded-xl shadow-sm hover:shadow"
+                                    className="flex items-center gap-1.5 text-sm font-medium text-fuchsia-600 dark:text-fuchsia-400 hover:text-fuchsia-700 dark:hover:text-fuchsia-300 transition-colors bg-fuchsia-50 dark:bg-fuchsia-500/10 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-500/20 px-4 py-2 rounded-lg"
                                   >
-                                    <Plus className="w-3.5 h-3.5" /> Adicionar Prêmio
+                                    <Plus className="w-4 h-4" /> Adicionar
                                   </button>
                                 </div>
                               )}
@@ -374,47 +422,47 @@ export function ChallengesPage() {
                   if (!result) return null;
                   
                   return (
-                    <div className="mb-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl p-4 border border-zinc-200/60 dark:border-zinc-700/50">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Progresso Atual</span>
-                        <span className="text-xs font-black text-fuchsia-600 dark:text-fuchsia-400">
+                    <div className="mb-5 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-5 border border-zinc-100 dark:border-zinc-800">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Progresso Atual</span>
+                        <span className="text-sm font-bold text-fuchsia-600 dark:text-fuchsia-400">
                           {result.progressPercent !== undefined ? `${Math.round(result.progressPercent)}%` : '0%'}
                         </span>
                       </div>
-                      <div className="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-2.5 mb-3 overflow-hidden">
+                      <div className="w-full bg-zinc-200 dark:bg-zinc-700 rounded-full h-2 mb-4 overflow-hidden">
                         <div 
-                          className="bg-fuchsia-500 h-2.5 rounded-full transition-all duration-500 ease-out" 
+                          className="bg-fuchsia-500 h-2 rounded-full transition-all duration-500 ease-out" 
                           style={{ width: `${Math.min(Math.max(result.progressPercent || 0, 0), 100)}%` }}
                         ></div>
                       </div>
                       
                       {result.challengeType === 'corrida' && (
-                        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300 text-center mb-2">
-                          <span className="font-bold text-zinc-900 dark:text-zinc-100">{result.activityDistanceKm || 0} km</span> percorridos de <span className="font-bold text-zinc-900 dark:text-zinc-100">{result.requiredDistanceKm} km</span>
+                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 text-center mb-1">
+                          <span className="font-bold text-zinc-900 dark:text-zinc-100">{result.activityDistanceKm || 0} km</span> de <span className="font-bold text-zinc-900 dark:text-zinc-100">{result.requiredDistanceKm} km</span>
                         </p>
                       )}
                       
                       {result.challengeType === 'pace' && (
-                        <div className="flex justify-around items-center text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                        <div className="flex justify-around items-center text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-1">
                           <div className="text-center">
-                            <span className="block text-[10px] text-zinc-400 uppercase font-bold">Seu Melhor Pace</span>
-                            <span className="font-bold text-zinc-900 dark:text-zinc-100">{result.activityPaceFormatted || '--:--'}/km</span>
+                            <span className="block text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-0.5">Seu Pace</span>
+                            <span className="font-bold text-zinc-900 dark:text-zinc-100">{result.activityPaceFormatted || '--:--'}</span>
                           </div>
                           <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-700"></div>
                           <div className="text-center">
-                            <span className="block text-[10px] text-zinc-400 uppercase font-bold">Meta Máxima</span>
-                            <span className="font-bold text-zinc-900 dark:text-zinc-100">{result.requiredPaceFormatted || '--:--'}/km</span>
+                            <span className="block text-[10px] text-zinc-400 uppercase font-bold tracking-wider mb-0.5">Meta</span>
+                            <span className="font-bold text-zinc-900 dark:text-zinc-100">{result.requiredPaceFormatted || '--:--'}</span>
                           </div>
                         </div>
                       )}
 
                       {!result.challengeCompleted && result.failureReason && (
-                        <div className="mt-3 p-3 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 text-xs font-medium rounded-xl border border-red-100 dark:border-red-900/30 text-center">
+                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-medium rounded-xl border border-red-100 dark:border-red-500/20 text-center">
                           {result.failureReason}
                         </div>
                       )}
                       {result.challengeCompleted && (
-                        <div className="mt-3 p-3 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 text-xs font-bold rounded-xl border border-green-100 dark:border-green-900/30 text-center flex items-center justify-center gap-1.5">
+                        <div className="mt-4 p-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-500/20 text-center flex items-center justify-center gap-1.5">
                           <Check className="w-4 h-4" /> {result.message || 'Desafio Concluído!'}
                         </div>
                       )}
@@ -427,7 +475,7 @@ export function ChallengesPage() {
                   <button
                     onClick={() => sincronizarDesafio(challenge.id)}
                     disabled={syncingId === challenge.id}
-                    className="w-full flex items-center justify-center gap-2 bg-fuchsia-600 hover:bg-fuchsia-700 active:scale-[0.98] text-white text-sm font-bold px-5 py-3 rounded-2xl shadow-xl transition-all disabled:opacity-60"
+                    className="w-full flex items-center justify-center gap-2 bg-fuchsia-600 hover:bg-fuchsia-700 active:scale-[0.99] text-white text-sm font-semibold px-5 py-3.5 rounded-2xl shadow-sm transition-all disabled:opacity-60"
                   >
                     {syncingId === challenge.id ? (
                       <>
@@ -435,11 +483,12 @@ export function ChallengesPage() {
                       </>
                     ) : (
                       <>
-                        <RefreshCw className="w-4 h-4" /> Sincronizar Corridas e Resgatar
+                        <RefreshCw className="w-4 h-4" /> Sincronizar e Resgatar
                       </>
                     )}
                   </button>
                 )}
+                </div>
               </div>
             )
           })}
@@ -449,50 +498,50 @@ export function ChallengesPage() {
       {/* Add Reward Modal */}
       {isRewardModalOpen && selectedChallengeForReward && createPortal(
         <div 
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-5 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-zinc-900/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setIsRewardModalOpen(false)}
         >
           <div 
-            className="bg-white dark:bg-zinc-900 rounded-[2rem] p-6 w-full max-w-md shadow-2xl relative animate-fade-in-up"
+            className="bg-white dark:bg-zinc-900 rounded-[2rem] p-7 w-full max-w-md shadow-2xl relative animate-in zoom-in-95 duration-200 border border-zinc-200/50 dark:border-zinc-800"
             onClick={e => e.stopPropagation()}
           >
             <button
               onClick={() => setIsRewardModalOpen(false)}
-              className="absolute top-5 right-5 p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-full transition-colors"
+              className="absolute top-5 right-5 p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 rounded-full transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
             
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-                <Gift className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-fuchsia-50 dark:bg-fuchsia-500/10 flex items-center justify-center border border-fuchsia-100 dark:border-fuchsia-500/20">
+                <Gift className="w-6 h-6 text-fuchsia-500" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">Adicionar Prêmio</h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">Desafio: {selectedChallengeForReward.title}</p>
+                <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Adicionar Prêmio</h3>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-[220px] truncate">Desafio: {selectedChallengeForReward.title}</p>
               </div>
             </div>
 
             <div className="space-y-4">
               {/* Option 1: Create New */}
-              <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200/60 dark:border-zinc-700/50">
-                <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2">Opção 1: Criar novo prêmio</p>
+              <div className="p-5 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200/60 dark:border-zinc-700/50">
+                <p className="text-sm font-semibold text-zinc-900 dark:text-white mb-3">Opção 1: Criar novo prêmio</p>
                 <Link
                   to={`/clubs/${clubId}/rewards/new?challenge=${selectedChallengeForReward.id}`}
-                  className="w-full flex items-center justify-center gap-2 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-sm font-bold px-4 py-2.5 rounded-xl transition-all"
+                  className="w-full flex items-center justify-center gap-2 bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium px-4 py-3 rounded-xl transition-all shadow-sm"
                 >
-                  <Plus className="w-4 h-4" /> Criar Prêmio
+                  <Plus className="w-4 h-4" /> Criar Novo Prêmio
                 </Link>
               </div>
 
               {/* Option 2: Reuse Existing */}
-              <div className="p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/30">
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-400 mb-2">Opção 2: Reutilizar prêmio existente</p>
+              <div className="p-5 bg-fuchsia-50/50 dark:bg-fuchsia-500/5 rounded-2xl border border-fuchsia-100 dark:border-fuchsia-500/20">
+                <p className="text-sm font-semibold text-fuchsia-900 dark:text-fuchsia-200 mb-3">Opção 2: Reutilizar existente</p>
                 <form onSubmit={handleAddExistingReward} className="space-y-3">
                   <select
                     value={selectedExistingRewardId}
                     onChange={(e) => setSelectedExistingRewardId(e.target.value)}
-                    className="w-full rounded-xl h-11 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 dark:text-zinc-100"
+                    className="w-full rounded-xl h-11 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-zinc-100"
                   >
                     <option value="">Selecione um prêmio...</option>
                     {uniqueRewards.map(r => (
@@ -502,13 +551,13 @@ export function ChallengesPage() {
                   <button
                     type="submit"
                     disabled={!selectedExistingRewardId || isAddingExistingReward}
-                    className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl transition-all disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-sm font-semibold px-4 py-3 rounded-xl transition-all disabled:opacity-50 shadow-sm"
                   >
                     {isAddingExistingReward ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
-                        <Check className="w-4 h-4" /> Vincular este Prêmio
+                        <Check className="w-4 h-4" /> Vincular Selecionado
                       </>
                     )}
                   </button>
@@ -523,41 +572,43 @@ export function ChallengesPage() {
       {/* Reward Details Modal */}
       {selectedReward && createPortal(
         <div 
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-5 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-zinc-900/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setSelectedReward(null)}
         >
           <div 
-            className="bg-white dark:bg-zinc-900 rounded-[2rem] overflow-hidden w-full max-w-md shadow-2xl relative animate-fade-in-up flex flex-col max-h-[90vh]"
+            className="bg-white dark:bg-zinc-900 rounded-[2rem] overflow-hidden w-full max-w-md shadow-2xl relative animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] border border-zinc-200/50 dark:border-zinc-800"
             onClick={e => e.stopPropagation()}
           >
             {/* Header / Cover */}
-            <div className="relative h-48 bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center shrink-0">
+            <div className="relative h-56 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
               {selectedReward.image_url ? (
                 <img src={selectedReward.image_url} alt={selectedReward.title} className="w-full h-full object-cover" />
               ) : (
-                <Award className="w-16 h-16 text-amber-400 dark:text-amber-600" />
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-fuchsia-50 to-purple-50 dark:from-fuchsia-900/20 dark:to-purple-900/20">
+                  <Award className="w-20 h-20 text-fuchsia-200 dark:text-fuchsia-800/50" />
+                </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <button
                 onClick={() => setSelectedReward(null)}
                 className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full backdrop-blur-md transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
-              <div className="absolute bottom-4 left-5 right-5">
-                <h2 className="text-2xl font-extrabold text-white leading-tight drop-shadow-md">{selectedReward.title}</h2>
-                <span className="inline-block mt-2 bg-black/30 backdrop-blur-md text-white/90 text-[10px] font-bold uppercase px-2 py-0.5 rounded-md">
+              <div className="absolute bottom-5 left-6 right-6">
+                <span className="inline-block mb-2 bg-fuchsia-500 text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md shadow-sm">
                   Prêmio
                 </span>
+                <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight drop-shadow-sm">{selectedReward.title}</h2>
               </div>
             </div>
 
             {/* Content */}
-            <div className="p-5 overflow-y-auto">
+            <div className="p-6 overflow-y-auto space-y-6">
               {selectedReward.description && (
-                <div className="mb-6">
-                  <h4 className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">
-                    <AlignLeft className="w-3.5 h-3.5" /> Sobre o prêmio
+                <div>
+                  <h4 className="flex items-center gap-2 text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">
+                    <AlignLeft className="w-4 h-4" /> Detalhes do Prêmio
                   </h4>
                   <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
                     {selectedReward.description}
@@ -565,21 +616,23 @@ export function ChallengesPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-amber-50 dark:bg-amber-900/10 rounded-[1.2rem] p-4 border border-amber-100 dark:border-amber-900/30">
-                  <p className="text-[10px] font-bold text-amber-600 dark:text-amber-500/70 uppercase tracking-wider mb-1 flex items-center gap-1">
-                    <Trophy className="w-3 h-3" /> Limite Mensal
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-5 border border-zinc-100 dark:border-zinc-800">
+                  <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <Trophy className="w-3.5 h-3.5" /> Mensal
                   </p>
-                  <p className="text-lg font-black text-amber-900 dark:text-amber-400">{selectedReward.monthly_limit || 10}</p>
+                  <p className="text-2xl font-bold text-zinc-900 dark:text-white">
+                    {selectedReward.monthly_limit || 10} <span className="text-sm font-medium text-zinc-500">disp.</span>
+                  </p>
                 </div>
               </div>
             </div>
             
             {/* Footer */}
-            <div className="p-4 border-t border-zinc-100 dark:border-zinc-800/60 bg-zinc-50 dark:bg-zinc-900/50 flex justify-end shrink-0">
+            <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 flex justify-end shrink-0">
               <button
                 onClick={() => setSelectedReward(null)}
-                className="bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white text-white dark:text-zinc-900 text-sm font-bold px-6 py-2.5 rounded-xl transition-all active:scale-95"
+                className="bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-semibold px-6 py-2.5 rounded-xl transition-all active:scale-95 shadow-sm"
               >
                 Fechar
               </button>

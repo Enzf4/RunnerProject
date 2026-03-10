@@ -94,13 +94,13 @@ export function ClubsPage() {
     <Link 
       key={club.id} 
       to={`/clubs/${club.id}`}
-      className="flex items-center gap-4 bg-white/70 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.4rem] p-4 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 hover:scale-[1.015] dark:hover:bg-zinc-800/80 active:scale-[0.98] transition-all"
+      className="flex items-center gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-500/30 transition-all group"
     >
-      <div className="w-14 h-14 rounded-2xl bg-pastel-green/30 dark:bg-green-900/30 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-inner dark:shadow-none">
+      <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center overflow-hidden flex-shrink-0 border border-emerald-100/50 dark:border-emerald-500/20">
         {club.logo_url ? (
           <img src={club.logo_url} alt={club.name} className="w-full h-full object-cover" />
         ) : (
-          <span className="font-black text-xl text-green-800 dark:text-green-300">{club.name.charAt(0)}</span>
+          <span className="font-bold text-xl text-emerald-600 dark:text-emerald-400">{club.name.charAt(0)}</span>
         )}
       </div>
       <div className="flex-1 min-w-0">
@@ -138,8 +138,8 @@ export function ClubsPage() {
       {myClubs.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-6 h-6 rounded-lg bg-fuchsia-200/50 dark:bg-fuchsia-900/40 flex items-center justify-center">
-              <Star className="w-3.5 h-3.5 text-fuchsia-700 dark:text-fuchsia-300" />
+            <div className="w-6 h-6 rounded-lg bg-fuchsia-50 dark:bg-fuchsia-500/10 flex items-center justify-center border border-fuchsia-100/50 dark:border-fuchsia-500/20">
+              <Star className="w-3.5 h-3.5 text-fuchsia-600 dark:text-fuchsia-400" />
             </div>
             <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Meus Clubes</h2>
             <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-700/50 px-2 py-0.5 rounded-full">{myClubs.length}</span>
@@ -160,10 +160,10 @@ export function ClubsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar clubes..."
-          className="w-full h-12 pl-11 pr-4 bg-white/70 dark:bg-zinc-800/60 backdrop-blur-sm border border-zinc-200/60 dark:border-zinc-700/50 rounded-2xl text-sm font-medium shadow-clay-sm dark:shadow-none focus:outline-none focus:ring-2 focus:ring-pastel-lavender/50 dark:focus:ring-purple-500/30 transition-all dark:text-zinc-100 dark:placeholder-zinc-500"
+          className="w-full h-12 pl-11 pr-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 transition-all shadow-sm dark:text-zinc-100 dark:placeholder-zinc-500"
         />
         {searching && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-fuchsia-400 border-t-transparent rounded-full animate-spin" />
         )}
       </div>
 
@@ -191,18 +191,18 @@ export function ClubsPage() {
       
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="w-8 h-8 border-4 border-pastel-lavender border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-4 border-fuchsia-600 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
           {clubs.length === 0 ? (
-            <div className="bg-white/60 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.6rem] p-8 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 text-center">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 text-center shadow-sm">
               <Users className="w-10 h-10 mx-auto text-zinc-300 dark:text-zinc-600 mb-3" />
-              <p className="text-zinc-500 text-sm font-bold mb-1">Nenhum clube encontrado</p>
+              <p className="text-zinc-600 dark:text-zinc-400 text-sm font-bold mb-1">Nenhum clube encontrado</p>
               <p className="text-zinc-400 dark:text-zinc-500 text-xs mb-4">Que tal criar o primeiro?</p>
               <Link 
                 to="/clubs/new" 
-                className="inline-flex items-center gap-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-bold px-5 py-2.5 rounded-full hover:bg-zinc-800 dark:hover:bg-white transition-colors"
+                className="inline-flex items-center gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors shadow-sm"
               >
                 <PlusCircle className="w-4 h-4" /> Criar Clube
               </Link>
