@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { fetchWithAuth } from '../lib/api'
-import { Check, X, ArrowLeft, Target, Calendar, Zap, RefreshCw, Trophy, Plus, Clock, TrendingUp, Gift, Award, ChevronDown, ChevronUp, AlignLeft, Edit, Trash2 } from 'lucide-react'
+import { Check, X, ArrowLeft, Target, Calendar, Zap, RefreshCw, Trophy, Plus, Clock, TrendingUp, Gift, Award, ChevronDown, ChevronUp, AlignLeft, Edit, Trash2, Save } from 'lucide-react'
 import { useToast } from '../components/Toast'
 
 export function ChallengesPage() {
@@ -24,19 +24,25 @@ export function ChallengesPage() {
   const [isAddingExistingReward, setIsAddingExistingReward] = useState(false)
   
   const [selectedReward, setSelectedReward] = useState(null)
+  
+  const [challengeToDelete, setChallengeToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  
+  const [challengeToEdit, setChallengeToEdit] = useState(null)
+  const [isEditing, setIsEditing] = useState(false)
 
   const { toast } = useToast()
 
   const isAdmin = currentUser && club && currentUser.id === club.admin_id
 
   useEffect(() => {
-    if (isRewardModalOpen || selectedReward) {
+    if (isRewardModalOpen || selectedReward || challengeToDelete || challengeToEdit) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = ''
     }
     return () => { document.body.style.overflow = '' }
-  }, [isRewardModalOpen, selectedReward])
+  }, [isRewardModalOpen, selectedReward, challengeToDelete, challengeToEdit])
 
   useEffect(() => {
     async function fetchData() {
@@ -83,50 +89,131 @@ export function ChallengesPage() {
   const rewardsForChallenge = (challengeId) =>
     rewards.filter(r => r.challenge_id === challengeId)
 
+  const formatPace = (paceSecPerKm) => {
+    if (!paceSecPerKm) return '--:--'
+    const mins = Math.floor(paceSecPerKm / 60)
+    const secs = Math.round(paceSecPerKm % 60)
+    return `${mins}:${secs.toString().padStart(2, '0')} /km`
+  }
+
   const sincronizarDesafio = async (challengeId) => {
     setSyncingId(challengeId)
     try {
-      // 1. Ingressar/Sincronizar corridas mais recentes no período do desafio
+      const challenge = challenges.find(c => c.id === challengeId)
+      if (!challenge) throw new Error('Desafio não encontrado')
+
+      // 1. Tentar ingressar/sincronizar no Strava backend (opcional, mantendo compatibilidade)
       const joinResponse = await fetchWithAuth(`/api/challenges/${challengeId}/join?userId=${currentUser?.id}`, {
         method: 'POST',
       })
       if (joinResponse.status === 404) {
         toast.error('Strava não conectado. Por favor, acesse seu Perfil para conectar.')
+        setSyncingId(null)
         return
       }
       if (joinResponse.status === 401) {
         toast.error('Sua sessão expirou ou o token é inválido.')
+        setSyncingId(null)
         return
       }
 
-      // 2. Validar desafio
-      const response = await fetchWithAuth(`/api/challenges/${challengeId}/sync?userId=${currentUser?.id}&recentCount=30`, {
-        method: 'POST',
-      })
-
-      if (response.status === 401) {
+      // 2. Buscar atividades do Strava para validar o desafio
+      const activitiesResponse = await fetchWithAuth(`/api/strava/activities?userId=${currentUser?.id}&count=30`);
+      if (activitiesResponse.status === 401) {
         toast.error("Sua sessão expirou ou o token é inválido.");
+        setSyncingId(null)
         return;
       }
 
-      // No axios o dado vem já em formato JSON dentro de response.data (se houver conteúdo)
-      const resultado = response.data || {};
+      let activities = [];
+      if (activitiesResponse.json) {
+        activities = await activitiesResponse.json();
+      } else if (activitiesResponse.data) {
+        activities = activitiesResponse.data;
+      }
+      if (!Array.isArray(activities)) activities = [];
 
-      // 3. Registrar progresso detalhado
+      // 3. Lógica de Validação Front-end
+      const startDateStr = new Date(challenge.start_date).toISOString().split('T')[0]
+      const endDateStr = new Date(challenge.end_date).toISOString().split('T')[0]
+      const challengeStart = new Date(startDateStr + 'T00:00:00Z')
+      const challengeEnd = new Date(endDateStr + 'T23:59:59Z')
+
+      const activitiesInDate = activities.filter(a => {
+        const aDate = new Date(a.startDate)
+        return aDate >= challengeStart && aDate <= challengeEnd
+      })
+
+      let challengeCompleted = false;
+      let failureReason = "Nenhuma atividade atingiu a meta.";
+      let bestActivity = null;
+      let maxProgressDistance = 0;
+      let bestPaceFound = Infinity;
+
+      if (challenge.challenge_type === 'distance' || challenge.challenge_type === 'corrida') {
+        activitiesInDate.forEach(a => {
+          if (a.distanceKm > maxProgressDistance) maxProgressDistance = a.distanceKm;
+          if (a.distanceKm >= challenge.target_value) {
+            challengeCompleted = true;
+            if (!bestActivity || a.distanceKm > bestActivity.distanceKm) {
+              bestActivity = a;
+            }
+          }
+        });
+      } else if (challenge.challenge_type === 'pace') {
+        activitiesInDate.forEach(a => {
+          if (a.paceSecPerKm > 0) {
+            if (a.paceSecPerKm < bestPaceFound) bestPaceFound = a.paceSecPerKm;
+            if (a.paceSecPerKm <= (challenge.target_value * 60)) {
+              challengeCompleted = true;
+              if (!bestActivity || a.paceSecPerKm < bestActivity.paceSecPerKm) {
+                bestActivity = a;
+              }
+            }
+          }
+        });
+      }
+
+      let progressPercent = 0;
+      if (challengeCompleted) {
+        progressPercent = 100;
+        failureReason = null;
+      } else {
+        if (activitiesInDate.length === 0) {
+          failureReason = "Nenhuma atividade encontrada no período do desafio.";
+        } else if (challenge.challenge_type === 'distance' || challenge.challenge_type === 'corrida') {
+          progressPercent = (maxProgressDistance / challenge.target_value) * 100;
+        } else if (challenge.challenge_type === 'pace') {
+          if (bestPaceFound !== Infinity) {
+            const diff = bestPaceFound - (challenge.target_value * 60);
+            progressPercent = Math.max(0, 100 - (diff / 60) * 10);
+          }
+        }
+      }
+
+      const resultado = {
+        challengeCompleted,
+        message: challengeCompleted ? "Desafio concluído com sucesso!" : null,
+        failureReason,
+        progressPercent: Math.min(100, Math.max(0, progressPercent)),
+        challengeType: challenge.challenge_type,
+        activityDistanceKm: bestActivity ? bestActivity.distanceKm : maxProgressDistance.toFixed(2),
+        requiredDistanceKm: challenge.target_value,
+        activityPaceFormatted: bestActivity ? formatPace(bestActivity.paceSecPerKm) : (bestPaceFound !== Infinity ? formatPace(bestPaceFound) : '--:--'),
+        requiredPaceFormatted: challenge.challenge_type === 'pace' ? formatPace(challenge.target_value * 60) : '--:--',
+      };
+
       setSyncResults(prev => ({
         ...prev,
         [challengeId]: resultado
       }))
 
-      if (response.status >= 200 && response.status < 300) {
-        if (resultado.challengeCompleted) {
-          toast.success("🏆 " + (resultado.message || "Parabéns! Desafio concluído!"));
-        } else {
-          toast.error(resultado.failureReason || resultado.message || "Meta ainda não atingida.");
-        }
+      if (challengeCompleted) {
+        toast.success("🏆 Parabéns! Desafio concluído!");
       } else {
-        toast.error(resultado.error || "Erro ao sincronizar desafio.");
+        toast.error(resultado.failureReason || "Meta ainda não atingida.");
       }
+
     } catch (error) {
       console.error('Erro na sincronização', error)
       toast.error('Erro de conexão ao sincronizar.')
@@ -200,24 +287,63 @@ export function ChallengesPage() {
     }
   }
 
-  const handleDeleteChallenge = async (challengeId) => {
-    if (!window.confirm('Tem certeza que deseja excluir este desafio? Todos os prêmios vinculados e progressos serão perdidos.')) {
-      return
-    }
+  const confirmDeleteChallenge = (challengeId) => setChallengeToDelete(challengeId)
 
+  const handleDeleteChallenge = async () => {
+    if (!challengeToDelete) return
+
+    setIsDeleting(true)
     try {
       const { error } = await supabase
         .from('challenges')
         .delete()
-        .eq('id', challengeId)
+        .eq('id', challengeToDelete)
 
       if (error) throw error
 
-      setChallenges(prev => prev.filter(c => c.id !== challengeId))
+      setChallenges(prev => prev.filter(c => c.id !== challengeToDelete))
       toast.success('Desafio excluído com sucesso!')
+      setChallengeToDelete(null)
     } catch (err) {
       console.error('Erro ao excluir desafio:', err)
       toast.error('Erro ao excluir desafio.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault()
+    if (!challengeToEdit.title || !challengeToEdit.target_value || !challengeToEdit.start_date || !challengeToEdit.end_date) {
+      toast.error('Preencha todos os campos obrigatórios.')
+      return
+    }
+
+    setIsEditing(true)
+    try {
+      const { data, error } = await supabase
+        .from('challenges')
+        .update({
+          title: challengeToEdit.title,
+          challenge_type: challengeToEdit.challenge_type,
+          target_value: parseFloat(challengeToEdit.target_value),
+          start_date: challengeToEdit.start_date,
+          end_date: challengeToEdit.end_date,
+        })
+        .eq('id', challengeToEdit.id)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      setChallenges(prev => prev.map(c => c.id === challengeToEdit.id ? data : c))
+      toast.success('Desafio atualizado com sucesso!')
+      setChallengeToEdit(null)
+    } catch (err) {
+      console.error('Erro ao atualizar desafio:', err)
+      toast.error('Erro ao atualizar desafio.')
+    } finally {
+      setIsEditing(false)
     }
   }
 
@@ -291,7 +417,11 @@ export function ChallengesPage() {
                       <div className="flex items-center gap-1 mr-1">
                         <button
                           onClick={() => {
-                            toast.success('Em breve! Edição será implementada na próxima atualização.')
+                            setChallengeToEdit({
+                              ...challenge,
+                              start_date: challenge.start_date.substring(0, 10),
+                              end_date: challenge.end_date.substring(0, 10)
+                            })
                           }}
                           className="p-1.5 text-zinc-400 hover:text-fuchsia-600 dark:text-zinc-500 dark:hover:text-fuchsia-400 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-500/10 rounded-lg transition-colors"
                           title="Editar"
@@ -299,7 +429,7 @@ export function ChallengesPage() {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteChallenge(challenge.id)}
+                          onClick={() => confirmDeleteChallenge(challenge.id)}
                           className="p-1.5 text-zinc-400 hover:text-red-600 dark:text-zinc-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
                           title="Excluir"
                         >
@@ -637,6 +767,157 @@ export function ChallengesPage() {
                 Fechar
               </button>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Delete Challenge Modal */}
+      {challengeToDelete && createPortal(
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-zinc-900/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => !isDeleting && setChallengeToDelete(null)}
+        >
+          <div 
+            className="bg-white dark:bg-zinc-900 rounded-[2rem] p-7 w-full max-w-sm shadow-2xl relative animate-in zoom-in-95 duration-200 border border-zinc-200/50 dark:border-zinc-800"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-14 h-14 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center mb-4 border border-red-100 dark:border-red-500/20">
+                <Trash2 className="w-6 h-6 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">Excluir Desafio?</h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+                Tem certeza que deseja excluir este desafio? Todos os prêmios vinculados e seu progresso serão perdidos permanentemente.
+              </p>
+              
+              <div className="w-full flex gap-3">
+                <button
+                  onClick={() => setChallengeToDelete(null)}
+                  disabled={isDeleting}
+                  className="flex-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white text-sm font-semibold px-4 py-3 rounded-xl transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteChallenge}
+                  disabled={isDeleting}
+                  className="flex-1 flex items-center justify-center bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-4 py-3 rounded-xl transition-all disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Sim, excluir'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Edit Challenge Modal */}
+      {challengeToEdit && createPortal(
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-zinc-900/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => !isEditing && setChallengeToEdit(null)}
+        >
+          <div 
+            className="bg-white dark:bg-zinc-900 rounded-[2rem] p-7 w-full max-w-md shadow-2xl relative animate-in zoom-in-95 duration-200 border border-zinc-200/50 dark:border-zinc-800 max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => !isEditing && setChallengeToEdit(null)}
+              className="absolute top-5 right-5 p-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 rounded-full transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-fuchsia-50 dark:bg-fuchsia-500/10 flex items-center justify-center border border-fuchsia-100 dark:border-fuchsia-500/20">
+                <Edit className="w-6 h-6 text-fuchsia-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Editar Desafio</h3>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Atualize os dados abaixo.</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block">Título</label>
+                <input
+                  type="text"
+                  value={challengeToEdit.title}
+                  onChange={e => setChallengeToEdit({...challengeToEdit, title: e.target.value})}
+                  className="w-full rounded-2xl h-11 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-white transition-all"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block">Tipo</label>
+                  <select
+                    value={challengeToEdit.challenge_type}
+                    onChange={e => setChallengeToEdit({...challengeToEdit, challenge_type: e.target.value})}
+                    className="w-full rounded-2xl h-11 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-white transition-all"
+                  >
+                    <option value="distance">Distância (km)</option>
+                    <option value="pace">Pace (min/km)</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block">Meta</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={challengeToEdit.target_value}
+                    onChange={e => setChallengeToEdit({...challengeToEdit, target_value: e.target.value})}
+                    className="w-full rounded-2xl h-11 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-white transition-all"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block">Início</label>
+                  <input
+                    type="date"
+                    value={challengeToEdit.start_date}
+                    onChange={e => setChallengeToEdit({...challengeToEdit, start_date: e.target.value})}
+                    className="w-full rounded-2xl h-11 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-white transition-all"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block">Fim</label>
+                  <input
+                    type="date"
+                    value={challengeToEdit.end_date}
+                    onChange={e => setChallengeToEdit({...challengeToEdit, end_date: e.target.value})}
+                    className="w-full rounded-2xl h-11 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 dark:text-white transition-all"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isEditing}
+                className="w-full flex items-center justify-center gap-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-sm font-semibold px-4 py-3.5 rounded-2xl transition-all disabled:opacity-50 mt-4 shadow-sm"
+              >
+                {isEditing ? (
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" /> Salvar Alterações
+                  </>
+                )}
+              </button>
+            </form>
           </div>
         </div>,
         document.body
