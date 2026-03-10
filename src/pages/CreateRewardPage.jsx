@@ -83,10 +83,10 @@ export function CreateRewardPage() {
         const fileName = `${Math.random()}.${fileExt}`
         const filePath = `${clubId}/${fileName}`
         
-        // Vamos usar o bucket 'rewards' para armazenar as imagens.
+        // Vamos usar o bucket 'reward_images' para armazenar as imagens.
         // Certifique-se de que este bucket exista e tenha políticas públicas de leitura/escrita apropriadas.
         const { error: uploadError } = await supabase.storage
-          .from('rewards')
+          .from('reward_images')
           .upload(filePath, imageFile, { upsert: true })
 
         if (uploadError) {
@@ -97,7 +97,7 @@ export function CreateRewardPage() {
         }
 
         const { data: { publicUrl } } = supabase.storage
-          .from('rewards')
+          .from('reward_images')
           .getPublicUrl(filePath)
           
         uploadedImageUrl = publicUrl

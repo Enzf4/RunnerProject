@@ -9,6 +9,7 @@ export function RunnerProfilePage() {
   const [clubs, setClubs] = useState([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [averagePace, setAveragePace] = useState(null)
 
   useEffect(() => {
     async function fetchProfile() {
@@ -66,6 +67,27 @@ export function RunnerProfilePage() {
       }))
 
       setClubs([...allClubs, ...adminOnly])
+      
+      // Fetch average pace from Strava backend
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
+        if (token) {
+          const response = await fetch(`https://api-projetointegrador-kmmg.onrender.com/api/Strava/average-pace?userId=${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (data && data.averagePace) {
+              setAveragePace(data.averagePace)
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao buscar pace médio do Strava para o corredor:', err)
+      }
+
       setLoading(false)
     }
     fetchProfile()
@@ -136,7 +158,7 @@ export function RunnerProfilePage() {
           <div>
             <p className="text-[10px] font-bold text-fuchsia-700/60 dark:text-fuchsia-400/60 uppercase tracking-wider">Pace</p>
             <p className="text-lg font-black text-fuchsia-900 dark:text-fuchsia-200 leading-none">
-              {runner.pace_medio || '--:--'}
+              {averagePace || runner.pace_medio || '--:--'}
             </p>
           </div>
         </div>

@@ -22,6 +22,7 @@ export function ProfilePage() {
   const [isStravaConnected, setIsStravaConnected] = useState(false)
   const [stravaActivities, setStravaActivities] = useState([])
   const [loadingActivities, setLoadingActivities] = useState(false)
+  const [averagePace, setAveragePace] = useState(null)
   const { toast } = useToast()
   
   const [profile, setProfile] = useState({
@@ -75,6 +76,7 @@ export function ProfilePage() {
         if (stravaResponse.data) {
           setIsStravaConnected(true)
           fetchRecentActivities()
+          fetchAveragePace()
         }
       }
       setLoading(false)
@@ -106,6 +108,27 @@ export function ProfilePage() {
       console.error('Erro ao buscar atividades do Strava:', error)
     } finally {
       setLoadingActivities(false)
+    }
+  }
+
+  const fetchAveragePace = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) return
+
+      const response = await fetch(`https://api-projetointegrador-kmmg.onrender.com/api/Strava/average-pace`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data && data.averagePace) {
+          setAveragePace(data.averagePace)
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar pace médio do Strava:', error)
     }
   }
 
@@ -299,7 +322,7 @@ export function ProfilePage() {
         <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800 flex items-center justify-center gap-2">
           <Timer className="w-4 h-4 text-fuchsia-500" />
           <span className="text-sm font-bold text-zinc-900 dark:text-white">
-            {profile.pace_medio || '--:--'} <span className="text-zinc-500 text-xs font-medium">/km</span>
+            {averagePace || profile.pace_medio || '--:--'} {!averagePace && <span className="text-zinc-500 text-xs font-medium">/km</span>}
           </span>
         </div>
         <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800 flex items-center justify-center gap-2">
@@ -505,7 +528,7 @@ export function ProfilePage() {
                        </div>
                        <div className="text-center">
                          <span className="block text-[10px] text-zinc-400 font-bold uppercase mb-0.5">Tempo</span>
-                         <span className="text-sm font-black text-zinc-900 dark:text-white">{Math.round(activity.movingTimeMinutes)} min</span>
+                         <span className="text-sm font-black text-zinc-900 dark:text-white">{Math.round((activity.movingTimeSeconds || 0) / 60)} min</span>
                        </div>
                      </div>
                    </a>
