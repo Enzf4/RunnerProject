@@ -82,7 +82,7 @@ export function ClubDetailsPage() {
         setAdmin(adminData)
       }
 
-      // Check membership
+      // Check membership (diferencia active/pending de invited)
       if (user) {
         const { data: memberData } = await supabase
           .from('club_members')
@@ -91,8 +91,9 @@ export function ClubDetailsPage() {
           .eq('user_id', user.id)
           .maybeSingle()
         if (memberData) {
-          setIsMember(true)
-          setMemberStatus(memberData.status || 'active')
+          const status = memberData.status || 'active'
+          setMemberStatus(status)
+          setIsMember(status === 'active' || status === 'pending')
         } else {
           setIsMember(false)
           setMemberStatus(null)

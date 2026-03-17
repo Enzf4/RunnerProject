@@ -30,6 +30,7 @@ export function HomePage() {
   const [myClubs, setMyClubs] = useState([])
   const [myClubCount, setMyClubCount] = useState(0)
   const [myRanks, setMyRanks] = useState([])
+  const [inviteCount, setInviteCount] = useState(0)
   const [runnerCount, setRunnerCount] = useState(0)
   const [isStravaConnected, setIsStravaConnected] = useState(true) // assume true to prevent flash
   const [recentActivities, setRecentActivities] = useState([])
@@ -88,7 +89,14 @@ export function HomePage() {
           .from('club_members')
           .select('club_id')
           .eq('user_id', user.id)
-          .in('status', ['active', 'invited'])
+          .eq('status', 'active')
+
+        const { count: pendingInvites } = await supabase
+          .from('club_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('status', 'invited')
+        setInviteCount(pendingInvites || 0)
 
         const { data: adminClubs } = await supabase
           .from('clubs')
@@ -206,6 +214,21 @@ export function HomePage() {
           </div>
         </div>
       </header>
+
+      {/* Convites pendentes – indicador discreto */}
+      {inviteCount > 0 && (
+        <div className="mb-4 flex">
+          <Link
+            to="/clubs"
+            className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-800 px-3 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+            <span>
+              Você tem {inviteCount} convite{inviteCount > 1 ? 's' : ''} de clube pendente
+            </span>
+          </Link>
+        </div>
+      )}
 
       {/* ─── Meu lugar nos rankings ─── */}
       {myRanks.length > 0 && (
@@ -400,43 +423,44 @@ export function HomePage() {
               Ver clubes <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
-          <div className="space-y-3">
-            {myClubs.map((club) => (
+          <div className="grid grid-cols-2 gap-2.5">
+            {myClubs.slice(0, 4).map((club) => (
               <div
                 key={club.id}
-                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-500/30 transition-all"
+                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-3 py-2.5 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-500/30 transition-all flex flex-col gap-2.5"
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 overflow-hidden flex-shrink-0 flex items-center justify-center border border-emerald-100/50 dark:border-emerald-500/20">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 overflow-hidden flex-shrink-0 flex items-center justify-center border border-emerald-100/50 dark:border-emerald-500/20">
                     {club.logo_url ? (
                       <img src={club.logo_url} alt={club.name} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="font-bold text-lg text-emerald-600 dark:text-emerald-400">{club.name?.charAt(0)}</span>
+                      <span className="font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                        {club.name?.charAt(0)}
+                      </span>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">{club.name}</p>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Desafios, ranking e prêmios</p>
-                  </div>
+                  <p className="font-bold text-[11px] text-zinc-900 dark:text-zinc-100 truncate flex-1 min-w-0">
+                    {club.name}
+                  </p>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-wrap gap-1">
                   <Link
                     to={`/clubs/${club.id}/challenges`}
-                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors"
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[10px] font-semibold"
                   >
-                    <Target className="w-3.5 h-3.5" /> Desafios
+                    <Target className="w-3 h-3" /> Desafios
                   </Link>
                   <Link
                     to={`/clubs/${club.id}#ranking`}
-                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors"
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-1 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[10px] font-semibold"
                   >
-                    <Trophy className="w-3.5 h-3.5" /> Ranking
+                    <Trophy className="w-3 h-3" /> Ranking
                   </Link>
                   <Link
                     to={`/clubs/${club.id}/rewards`}
-                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-500/10 border border-fuchsia-100 dark:border-fuchsia-500/20 text-fuchsia-700 dark:text-fuchsia-300 text-xs font-bold hover:bg-fuchsia-100 dark:hover:bg-fuchsia-500/20 transition-colors"
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-1 bg-fuchsia-50 dark:bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300 text-[10px] font-semibold"
                   >
-                    <Gift className="w-3.5 h-3.5" /> Prêmios
+                    <Gift className="w-3 h-3" /> Prêmios
                   </Link>
                 </div>
               </div>
