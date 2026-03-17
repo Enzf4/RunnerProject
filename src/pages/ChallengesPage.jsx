@@ -310,7 +310,30 @@ export function ChallengesPage() {
           if (participantError) {
             console.error('Erro ao salvar participante:', participantError)
           } else {
-            toast.success("🏆 Parabéns! Desafio concluído e salvo!");
+            // 5. Resgatar automaticamente os prêmios vinculados ao desafio
+            const challengeRewards = rewards.filter(r => r.challenge_id === challengeId)
+            
+            if (challengeRewards.length > 0) {
+              const rewardInserts = challengeRewards.map(reward => ({
+                reward_id: reward.id,
+                user_id: currentUser?.id,
+                proof_type: 'strava_sync',
+                proof_url: null
+              }))
+              
+              const { error: rewardError } = await supabase
+                .from('reward_history')
+                .insert(rewardInserts)
+              
+              if (rewardError) {
+                console.error('Erro ao resgatar prêmios:', rewardError)
+                toast.success("🏆 Parabéns! Desafio concluído e salvo!");
+              } else {
+                toast.success(`🏆 Parabéns! Desafio concluído e ${challengeRewards.length} prêmio(s) resgatado(s)!`);
+              }
+            } else {
+              toast.success("🏆 Parabéns! Desafio concluído e salvo!");
+            }
           }
         } catch (syncErr) {
           console.error('Erro ao persistir:', syncErr);
