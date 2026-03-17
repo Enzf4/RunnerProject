@@ -318,11 +318,21 @@ export function ProfilePage() {
 
       {/* Stat Chips */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800 flex items-center justify-center gap-2">
-          <Timer className="w-4 h-4 text-fuchsia-500" />
-          <span className="text-sm font-bold text-zinc-900 dark:text-white">
-            {averagePace || profile.pace_medio || '--:--'} {!averagePace && <span className="text-zinc-500 text-xs font-medium">/km</span>}
-          </span>
+        <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800 flex flex-col items-center justify-center gap-1">
+          <div className="flex items-center gap-1.5">
+            <Timer className="w-4 h-4 text-fuchsia-500" />
+            <span className="text-sm font-bold text-zinc-900 dark:text-white">
+              {averagePace || profile.pace_medio || '--:--'}
+            </span>
+          </div>
+          {averagePace && (
+            <span className="flex items-center gap-0.5 text-[9px] font-semibold bg-[#FC4C02]/20 text-[#FC4C02] px-1.5 py-0.5 rounded" title="Calculado automaticamente pelo Strava">
+              <svg viewBox="0 0 24 24" className="w-3 h-3" fill="currentColor">
+                <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+              </svg>
+              Strava
+            </span>
+          )}
         </div>
         <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800 flex items-center justify-center gap-2">
           <MapPin className="w-4 h-4 text-emerald-500" />

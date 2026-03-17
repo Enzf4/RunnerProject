@@ -34,7 +34,9 @@ export function HomePage() {
   const [runnerCount, setRunnerCount] = useState(0)
   const [isStravaConnected, setIsStravaConnected] = useState(true) // assume true to prevent flash
   const [recentActivities, setRecentActivities] = useState([])
+  const [stravaAveragePace, setStravaAveragePace] = useState(null)
   const [eligibleChallenges, setEligibleChallenges] = useState([])
+  const [isPaceFromStrava, setIsPaceFromStrava] = useState(false)
   const [loading, setLoading] = useState(true)
   const greeting = getGreeting()
 
@@ -65,6 +67,19 @@ export function HomePage() {
               }
               if (Array.isArray(acts)) {
                 setRecentActivities(acts);
+                // Se tem atividades do Strava, calcular pace médio
+                if (acts.length > 0) {
+                  setIsPaceFromStrava(true);
+                  const validPaces = acts
+                    .filter(a => a.paceSecPerKm && a.paceSecPerKm > 0)
+                    .map(a => a.paceSecPerKm);
+                  if (validPaces.length > 0) {
+                    const avgPaceSec = validPaces.reduce((a, b) => a + b, 0) / validPaces.length;
+                    const mins = Math.floor(avgPaceSec / 60);
+                    const secs = Math.round(avgPaceSec % 60);
+                    setStravaAveragePace(`${mins}:${secs.toString().padStart(2, '0')}`);
+                  }
+                }
               }
             }
           } catch(err) {
@@ -446,10 +461,35 @@ export function HomePage() {
             <div className="w-8 h-8 rounded-xl bg-white/40 dark:bg-white/10 flex items-center justify-center">
               <Timer className="w-4 h-4 text-fuchsia-800 dark:text-fuchsia-300" />
             </div>
-            <span className="text-[10px] font-bold text-fuchsia-800/70 dark:text-fuchsia-300/70 uppercase tracking-wider">Pace Médio</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold text-fuchsia-800/70 dark:text-fuchsia-300/70 uppercase tracking-wider">Pace Médio</span>
+              {isPaceFromStrava && (
+                <span className="flex items-center gap-0.5 text-[9px] font-semibold bg-[#FC4C02]/20 text-[#FC4C02] px-1.5 py-0.5 rounded" title="Calculado automaticamente pelo Strava">
+                  <svg viewBox="0 0 24 24" className="w-3 h-3" fill="currentColor">
+                    <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+                  </svg>
+                  Strava
+                </span>
+              )}
+            </div>
           </div>
           <div className="mt-auto flex flex-col justify-end pt-4">
-            {profile?.pace_medio && profile.pace_medio.includes(':') ? (
+            {stravaAveragePace ? (
+              <>
+                <div className="flex items-baseline justify-between w-full border-b-2 border-fuchsia-900/10 dark:border-fuchsia-200/10 pb-1">
+                  <span className="text-6xl lg:text-7xl font-black text-fuchsia-900 dark:text-fuchsia-200 tracking-tighter leading-none">
+                    {stravaAveragePace.split(':')[0]}
+                  </span>
+                  <span className="text-xs font-bold text-fuchsia-800/60 dark:text-fuchsia-400/60 uppercase tracking-widest">Min</span>
+                </div>
+                <div className="flex items-baseline justify-between w-full pt-1">
+                  <span className="text-5xl lg:text-6xl font-black text-fuchsia-900/60 dark:text-fuchsia-200/60 tracking-tighter leading-none">
+                    {stravaAveragePace.split(':')[1]}
+                  </span>
+                  <span className="text-xs font-bold text-fuchsia-800/60 dark:text-fuchsia-400/60 uppercase tracking-widest">Seg</span>
+                </div>
+              </>
+            ) : profile?.pace_medio && profile.pace_medio.includes(':') ? (
               <>
                 <div className="flex items-baseline justify-between w-full border-b-2 border-fuchsia-900/10 dark:border-fuchsia-200/10 pb-1">
                   <span className="text-6xl lg:text-7xl font-black text-fuchsia-900 dark:text-fuchsia-200 tracking-tighter leading-none">

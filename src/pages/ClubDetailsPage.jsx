@@ -293,6 +293,21 @@ export function ClubDetailsPage() {
     }
   }
 
+  const handleKickMember = async (userIdToKick, memberName) => {
+    try {
+      const { error } = await supabase
+        .from('club_members')
+        .delete()
+        .match({ club_id: id, user_id: userIdToKick })
+      if (error) throw error
+      
+      setMembers(prev => prev.filter(m => m.id !== userIdToKick))
+      toast.success(`${memberName || 'Membro'} foi expulso do clube.`)
+    } catch (error) {
+      toast.error('Erro ao expulsar membro: ' + error.message)
+    }
+  }
+
   const handleSave = async () => {
     setSaving(true)
     setSaved(false)
@@ -761,38 +776,55 @@ export function ClubDetailsPage() {
         ) : (
           <div className="space-y-2">
             {members.map((member) => (
-              <Link
+              <div
                 key={member.id}
-                to={`/runners/${member.id}`}
-                className="flex items-center gap-4 p-3 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:shadow-sm border border-transparent hover:border-zinc-100 dark:hover:border-zinc-800 active:scale-[0.99] transition-all"
+                className="flex items-center gap-4 p-3 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:shadow-sm border border-transparent hover:border-zinc-100 dark:hover:border-zinc-800 active:scale-[0.99] transition-all group"
               >
-                <div className="w-12 h-12 rounded-2xl bg-fuchsia-50 dark:bg-fuchsia-500/10 border border-fuchsia-100/50 dark:border-fuchsia-500/20 overflow-hidden flex items-center justify-center flex-shrink-0">
-                  {member.photo_url ? (
-                    <img src={member.photo_url} alt={member.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <UserCircle className="w-6 h-6 text-fuchsia-400 dark:text-fuchsia-500" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate group-hover:text-fuchsia-600 transition-colors">{member.name || 'Corredor'}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {member.cidade && (
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-1">
-                        <MapPin className="w-3 h-3" /> {member.cidade}
-                      </span>
-                    )}
-                    {member.pace_medio && (
-                      <span className="text-[11px] text-fuchsia-600 dark:text-fuchsia-400 font-semibold bg-fuchsia-50 dark:bg-fuchsia-500/10 px-1.5 py-0.5 rounded-md">
-                        {member.pace_medio}
-                      </span>
+                <Link
+                  to={`/runners/${member.id}`}
+                  className="flex items-center gap-4 flex-1 min-w-0"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-fuchsia-50 dark:bg-fuchsia-500/10 border border-fuchsia-100/50 dark:border-fuchsia-500/20 overflow-hidden flex items-center justify-center flex-shrink-0">
+                    {member.photo_url ? (
+                      <img src={member.photo_url} alt={member.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <UserCircle className="w-6 h-6 text-fuchsia-400 dark:text-fuchsia-500" />
                     )}
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold truncate group-hover:text-fuchsia-600 transition-colors">{member.name || 'Corredor'}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {member.cidade && (
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> {member.cidade}
+                        </span>
+                      )}
+                      {member.pace_medio && (
+                        <span className="text-[11px] text-fuchsia-600 dark:text-fuchsia-400 font-semibold bg-fuchsia-50 dark:bg-fuchsia-500/10 px-1.5 py-0.5 rounded-md">
+                          {member.pace_medio}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {member.id === club.admin_id && (
+                    <span className="text-[9px] font-bold text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-100 dark:bg-fuchsia-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider">Admin</span>
+                  )}
+                  {isAdmin && member.id !== club.admin_id && (
+                    <button
+                      onClick={() => handleKickMember(member.id, member.name)}
+                      className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors"
+                      title="Expulsar membro"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
-                {member.id === club.admin_id && (
-                  <span className="text-[9px] font-bold text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-100 dark:bg-fuchsia-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider">Admin</span>
-                )}
-                <ChevronRight className="w-4 h-4 text-zinc-300 dark:text-zinc-600 flex-shrink-0" />
-              </Link>
+                <Link to={`/runners/${member.id}`}>
+                  <ChevronRight className="w-4 h-4 text-zinc-300 dark:text-zinc-600 flex-shrink-0" />
+                </Link>
+              </div>
             ))}
           </div>
         )}

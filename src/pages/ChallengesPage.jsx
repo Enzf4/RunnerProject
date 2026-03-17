@@ -30,6 +30,7 @@ export function ChallengesPage() {
   
   const [challengeToEdit, setChallengeToEdit] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [eligibleChallenges, setEligibleChallenges] = useState(new Set())
 
   const { toast } = useToast()
 
@@ -106,6 +107,60 @@ export function ChallengesPage() {
             }
           })
           setSyncResults(completedResults)
+        }
+
+        // Verificar desafios elegíveis (não resgatados mas que cumprem critérios)
+        try {
+          const activitiesResponse = await fetchWithAuth(`/api/strava/activities?userId=${user.id}&count=30`);
+          if (activitiesResponse.ok || (activitiesResponse.status >= 200 && activitiesResponse.status < 300)) {
+            let activities = [];
+            if (activitiesResponse.json) {
+              activities = await activitiesResponse.json();
+            } else if (activitiesResponse.data) {
+              activities = activitiesResponse.data;
+            }
+            if (Array.isArray(activities)) {
+              const elegiveis = new Set()
+              
+              challengesData?.forEach(challenge => {
+                // Pular se já foi resgatado
+                if (participantsData?.some(p => p.challenge_id === challenge.id)) return
+                
+                const startDateStr = new Date(challenge.start_date).toISOString().split('T')[0]
+                const endDateStr = new Date(challenge.end_date).toISOString().split('T')[0]
+                const challengeStart = new Date(startDateStr + 'T00:00:00Z')
+                const challengeEnd = new Date(endDateStr + 'T23:59:59Z')
+
+                const activitiesInDate = activities.filter(a => {
+                  const aDate = new Date(a.startDate)
+                  return aDate >= challengeStart && aDate <= challengeEnd
+                })
+
+                if (activitiesInDate.length === 0) return
+
+                // Verificar critérios
+                let isEligible = false
+                if (challenge.challenge_type === 'distance' || challenge.challenge_type === 'corrida') {
+                  const maxDistance = Math.max(...activitiesInDate.map(a => a.distanceKm || 0))
+                  isEligible = maxDistance >= challenge.target_value
+                } else if (challenge.challenge_type === 'pace') {
+                  const validPaces = activitiesInDate.filter(a => a.paceSecPerKm > 0).map(a => a.paceSecPerKm)
+                  if (validPaces.length > 0) {
+                    const bestPace = Math.min(...validPaces)
+                    isEligible = bestPace <= (challenge.target_value * 60)
+                  }
+                }
+
+                if (isEligible) {
+                  elegiveis.add(challenge.id)
+                }
+              })
+              
+              setEligibleChallenges(elegiveis)
+            }
+          }
+        } catch (err) {
+          console.error('Erro ao verificar elegibilidade:', err)
         }
       }
 
@@ -449,18 +504,52 @@ export function ChallengesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          {challenges.map((challenge) => {
+          {[...challenges]
+            .sort((a, b) => {
+              // Ordenar: elegíveis primeiro, depois por data de término
+              const aEligible = eligibleChallenges.has(a.id) || syncResults[a.id]?.challengeCompleted
+              const bEligible = eligibleChallenges.has(b.id) || syncResults[b.id]?.challengeCompleted
+              
+              if (aEligible && !bEligible) return -1
+              if (!aEligible && bEligible) return 1
+              
+              // Se ambos têm mesmo status, ordenar por data de término (mais próximo primeiro)
+              return new Date(a.end_date) - new Date(b.end_date)
+            })
+            .map((challenge) => {
             const active = isActive(challenge)
+            const isRedeemed = syncResults[challenge.id]?.challengeCompleted
+            const isEligible = eligibleChallenges.has(challenge.id) && !isRedeemed
             return (
               <div
                 key={challenge.id}
-                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 transition-all hover:shadow-md hover:border-fuchsia-200 dark:hover:border-fuchsia-500/30 flex flex-col"
+                className={`bg-white dark:bg-zinc-900 border rounded-3xl p-6 transition-all hover:shadow-md flex flex-col ${
+                  isRedeemed 
+                    ? 'border-emerald-400 dark:border-emerald-500/50 ring-2 ring-emerald-100 dark:ring-emerald-900/30' 
+                    : isEligible
+                    ? 'border-amber-400 dark:border-amber-500/50 ring-2 ring-amber-100 dark:ring-amber-900/30'
+                    : 'border-zinc-200 dark:border-zinc-800 hover:border-fuchsia-200 dark:hover:border-fuchsia-500/30'
+                }`}
               >
                 {/* Status Badge & Admin Actions */}
                 <div className="flex items-center justify-between mb-5">
-                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold uppercase tracking-wider ${active ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-500/20' : 'bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 border-zinc-200/50 dark:border-zinc-700/50'}`}>
-                    <Target className="w-3.5 h-3.5" />
-                    {active ? 'Ativo' : 'Encerrado'}
+                  <div className="flex items-center gap-2">
+                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold uppercase tracking-wider ${active ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-500/20' : 'bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 border-zinc-200/50 dark:border-zinc-700/50'}`}>
+                      <Target className="w-3.5 h-3.5" />
+                      {active ? 'Ativo' : 'Encerrado'}
+                    </div>
+                    {isEligible && (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold border border-amber-200 dark:border-amber-800">
+                        <Gift className="w-3 h-3" />
+                        Pode Resgatar
+                      </div>
+                    )}
+                    {isRedeemed && (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
+                        <Check className="w-3 h-3" />
+                        Resgatado
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex items-center gap-2">
