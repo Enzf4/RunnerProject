@@ -146,7 +146,19 @@ export function TelaRanking({ clubId }) {
                 </div>
                 
                 <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden flex items-center justify-center flex-shrink-0">
-                  <UserCircle className="w-6 h-6 text-zinc-400 dark:text-zinc-500" />
+                  {row.photo_url ? (
+                    <img 
+                      src={row.photo_url} 
+                      alt={row.displayName} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
+                    />
+                  ) : (
+                    <UserCircle className="w-6 h-6 text-zinc-400 dark:text-zinc-500" />
+                  )}
                 </div>
 
                 <div className="flex-1 min-w-0">

@@ -76,7 +76,6 @@ export function ProfilePage() {
         if (stravaResponse.data) {
           setIsStravaConnected(true)
           fetchRecentActivities()
-          fetchAveragePace()
         }
       }
       setLoading(false)
@@ -95,40 +94,34 @@ export function ProfilePage() {
       // Usando axios diretamente pois a assinatura com headers nativos estava montada fixa
       const response = await axios({
         method: 'GET',
-        url: `https://api-projetointegrador-kmmg.onrender.com/api/strava/activities?userId=${userId}&count=3`,
+        url: `https://api-projetointegrador-kmmg.onrender.com/api/strava/activities?userId=${userId}&count=10`,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
       if (response.status >= 200 && response.status < 300) {
-        setStravaActivities(response.data || [])
+        const activities = response.data || []
+        setStravaActivities(activities.slice(0, 3))
+        
+        // Calcular pace médio das atividades
+        if (activities.length > 0) {
+          const validPaces = activities
+            .filter(a => a.paceSecPerKm && a.paceSecPerKm > 0)
+            .map(a => a.paceSecPerKm)
+          
+          if (validPaces.length > 0) {
+            const avgPaceSec = validPaces.reduce((a, b) => a + b, 0) / validPaces.length
+            const mins = Math.floor(avgPaceSec / 60)
+            const secs = Math.round(avgPaceSec % 60)
+            setAveragePace(`${mins}:${secs.toString().padStart(2, '0')}`)
+          }
+        }
       }
     } catch (error) {
       console.error('Erro ao buscar atividades do Strava:', error)
     } finally {
       setLoadingActivities(false)
-    }
-  }
-
-  const fetchAveragePace = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const token = session?.access_token
-      if (!token) return
-
-      const response = await fetch(`https://api-projetointegrador-kmmg.onrender.com/api/Strava/average-pace`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        if (data && data.averagePace) {
-          setAveragePace(data.averagePace)
-        }
-      }
-    } catch (error) {
-      console.error('Erro ao buscar pace médio do Strava:', error)
     }
   }
 

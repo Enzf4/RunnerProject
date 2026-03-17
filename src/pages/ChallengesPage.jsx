@@ -77,6 +77,38 @@ export function ChallengesPage() {
         console.warn('Erro ao carregar prêmios:', rewardsError.message)
       }
       setRewards(rewardsData || [])
+
+      // Buscar desafios já completados pelo usuário
+      if (user) {
+        const { data: participantsData } = await supabase
+          .from('challenge_participants')
+          .select('challenge_id, status')
+          .eq('user_id', user.id)
+          .eq('status', 'completed')
+        
+        if (participantsData && participantsData.length > 0) {
+          // Preencher syncResults com desafios completados
+          const completedResults = {}
+          participantsData.forEach(participant => {
+            const challenge = challengesData?.find(c => c.id === participant.challenge_id)
+            if (challenge) {
+              completedResults[participant.challenge_id] = {
+                challengeCompleted: true,
+                message: "Desafio concluído!",
+                failureReason: null,
+                progressPercent: 100,
+                challengeType: challenge.challenge_type,
+                activityDistanceKm: challenge.target_value,
+                requiredDistanceKm: challenge.target_value,
+                activityPaceFormatted: '--:--',
+                requiredPaceFormatted: challenge.challenge_type === 'pace' ? formatPace(challenge.target_value * 60) : '--:--',
+              }
+            }
+          })
+          setSyncResults(completedResults)
+        }
+      }
+
       setLoading(false)
     }
     fetchData()
@@ -209,7 +241,26 @@ export function ChallengesPage() {
       }))
 
       if (challengeCompleted) {
-        toast.success("🏆 Parabéns! Desafio concluído!");
+        // 4. Persistir no backend criando challenge_participant diretamente
+        try {
+          // Inserir ou atualizar na tabela challenge_participants
+          const { error: participantError } = await supabase
+            .from('challenge_participants')
+            .upsert({
+              challenge_id: challengeId,
+              user_id: currentUser?.id,
+              status: 'completed'
+            }, { onConflict: 'challenge_id,user_id' })
+          
+          if (participantError) {
+            console.error('Erro ao salvar participante:', participantError)
+          } else {
+            toast.success("🏆 Parabéns! Desafio concluído e salvo!");
+          }
+        } catch (syncErr) {
+          console.error('Erro ao persistir:', syncErr);
+          toast.success("🏆 Parabéns! Desafio concluído!");
+        }
       } else {
         toast.error(resultado.failureReason || "Meta ainda não atingida.");
       }
@@ -604,12 +655,20 @@ export function ChallengesPage() {
                 {active && (
                   <button
                     onClick={() => sincronizarDesafio(challenge.id)}
-                    disabled={syncingId === challenge.id}
-                    className="w-full flex items-center justify-center gap-2 bg-fuchsia-600 hover:bg-fuchsia-700 active:scale-[0.99] text-white text-sm font-semibold px-5 py-3.5 rounded-2xl shadow-sm transition-all disabled:opacity-60"
+                    disabled={syncingId === challenge.id || syncResults[challenge.id]?.challengeCompleted}
+                    className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold px-5 py-3.5 rounded-2xl shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
+                      syncResults[challenge.id]?.challengeCompleted 
+                        ? 'bg-emerald-500 hover:bg-emerald-600' 
+                        : 'bg-fuchsia-600 hover:bg-fuchsia-700 active:scale-[0.99]'
+                    }`}
                   >
                     {syncingId === challenge.id ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" /> Sincronizando...
+                      </>
+                    ) : syncResults[challenge.id]?.challengeCompleted ? (
+                      <>
+                        <Check className="w-4 h-4" /> Desafio Resgatado
                       </>
                     ) : (
                       <>

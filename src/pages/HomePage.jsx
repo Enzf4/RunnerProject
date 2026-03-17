@@ -34,11 +34,13 @@ export function HomePage() {
   const [runnerCount, setRunnerCount] = useState(0)
   const [isStravaConnected, setIsStravaConnected] = useState(true) // assume true to prevent flash
   const [recentActivities, setRecentActivities] = useState([])
+  const [eligibleChallenges, setEligibleChallenges] = useState([])
   const [loading, setLoading] = useState(true)
   const greeting = getGreeting()
 
   useEffect(() => {
     async function loadData() {
+      let hasStrava = false
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUserId(user.id)
@@ -48,7 +50,7 @@ export function HomePage() {
         ])
         setProfile(profileResponse.data)
         
-        const hasStrava = !!stravaResponse.data;
+        hasStrava = !!stravaResponse.data;
         setIsStravaConnected(hasStrava)
 
         if (hasStrava) {
@@ -114,6 +116,70 @@ export function HomePage() {
             .in('id', [...clubIds])
           const list = clubsData || []
           setMyClubs(list)
+
+          // Buscar desafios ativos dos clubes do usuário
+          const { data: challengesData } = await supabase
+            .from('challenges')
+            .select('*, clubs(name, logo_url)')
+            .in('club_id', [...clubIds])
+            .lte('start_date', new Date().toISOString())
+            .gte('end_date', new Date().toISOString())
+          
+          if (challengesData && hasStrava) {
+            // Buscar desafios já resgatados pelo usuário
+            const { data: redeemedChallenges } = await supabase
+              .from('challenge_participants')
+              .select('challenge_id')
+              .eq('user_id', user.id)
+              .eq('status', 'completed')
+            
+            const redeemedChallengeIds = new Set(redeemedChallenges?.map(r => r.challenge_id) || [])
+
+            // Buscar atividades do Strava
+            try {
+              const activitiesRes = await fetchWithAuth(`/api/strava/activities?userId=${user.id}&count=30`);
+              if (activitiesRes.ok) {
+                let acts = [];
+                if (activitiesRes.json) {
+                  acts = await activitiesRes.json();
+                } else if (activitiesRes.data) {
+                  acts = activitiesRes.data;
+                }
+                if (Array.isArray(acts)) {
+                  // Verificar quais desafios podem ser completados (e ainda não foram resgatados)
+                  const eligible = challengesData.filter(challenge => {
+                    // Pular se já foi resgatado
+                    if (redeemedChallengeIds.has(challenge.id)) return false
+                    
+                    const startDate = new Date(challenge.start_date)
+                    const endDate = new Date(challenge.end_date)
+                    
+                    // Verificar se há atividades no período do desafio
+                    const activitiesInRange = acts.filter(a => {
+                      const aDate = new Date(a.startDate)
+                      return aDate >= startDate && aDate <= endDate
+                    })
+                    
+                    if (activitiesInRange.length === 0) return false
+                    
+                    // Verificar critérios do desafio
+                    if (challenge.challenge_type === 'distance' || challenge.challenge_type === 'corrida') {
+                      const maxDistance = Math.max(...activitiesInRange.map(a => a.distanceKm || 0))
+                      return maxDistance >= challenge.target_value
+                    } else if (challenge.challenge_type === 'pace') {
+                      const bestPace = Math.min(...activitiesInRange.filter(a => a.paceSecPerKm > 0).map(a => a.paceSecPerKm))
+                      return bestPace <= (challenge.target_value * 60)
+                    }
+                    return false
+                  }).slice(0, 3) // Limitar a 3 desafios
+                  
+                  setEligibleChallenges(eligible)
+                }
+              }
+            } catch(err) {
+              console.error('Erro ao verificar desafios elegíveis:', err);
+            }
+          }
         }
       }
 
@@ -122,7 +188,7 @@ export function HomePage() {
     loadData()
   }, [])
 
-  // Buscar posição do usuário nos rankings dos clubes em que participa (por prêmios)
+  // Buscar posição do usuário nos rankings dos clubes em que participa (por pace - menor = melhor)
   useEffect(() => {
     if (!userId || myClubs.length === 0) {
       setMyRanks([])
@@ -138,8 +204,7 @@ export function HomePage() {
           .from('vw_club_ranking')
           .select('user_id')
           .eq('club_id', club.id)
-          .order('total_premios', { ascending: false })
-          .order('total_premios', { ascending: false })
+          .order('pace_medio_min_km', { ascending: true, nullsFirst: false })
 
         if (error || !data) continue
 
@@ -236,12 +301,12 @@ export function HomePage() {
           <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm rounded-[1.6rem] p-4 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                  <Trophy className="w-4 h-4 text-amber-600 dark:text-amber-300" />
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                  <Timer className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                    Seu lugar nos rankings
+                    Seu lugar nos rankings (pace)
                   </p>
                   <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
                     Veja como você está nos clubes que participa.
@@ -260,13 +325,13 @@ export function HomePage() {
                 <Link
                   key={rank.clubId}
                   to={`/clubs/${rank.clubId}#ranking`}
-                  className="min-w-[140px] flex-1 bg-zinc-50 dark:bg-zinc-800/70 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2.5 flex flex-col justify-between hover:border-amber-200 dark:hover:border-amber-400/50 hover:bg-amber-50/70 dark:hover:bg-amber-500/10 transition-all"
+                  className="min-w-[140px] flex-1 bg-zinc-50 dark:bg-zinc-800/70 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2.5 flex flex-col justify-between hover:border-emerald-200 dark:hover:border-emerald-400/50 hover:bg-emerald-50/70 dark:hover:bg-emerald-500/10 transition-all"
                 >
                   <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
-                    {rank.position === 1 ? 'Top 1 do clube' : 'Posição no ranking'}
+                    {rank.position === 1 ? 'Top 1 no pace' : 'Posição no pace'}
                   </p>
                   <div className="flex items-baseline gap-1 mb-1.5">
-                    <span className="text-xl font-black text-amber-600 dark:text-amber-400">
+                    <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">
                       #{rank.position}
                     </span>
                     <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -276,6 +341,73 @@ export function HomePage() {
                   <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
                     {rank.clubName}
                   </p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Desafios Elegíveis (baseados no Strava) ─── */}
+      {isStravaConnected && eligibleChallenges.length > 0 && (
+        <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '0.04s' }}>
+          <div className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/30 dark:to-green-950/20 rounded-[1.6rem] p-4 shadow-clay-sm dark:shadow-none border border-emerald-200/50 dark:border-emerald-800/30">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                  <Target className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                    Desafios para Resgatar
+                  </p>
+                  <p className="text-[11px] text-emerald-600/70 dark:text-emerald-400/70">
+                    Você já completou com seus dados do Strava!
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/clubs"
+                className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors"
+              >
+                Ver todos <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+              {eligibleChallenges.map(challenge => (
+                <Link
+                  key={challenge.id}
+                  to={`/clubs/${challenge.club_id}/challenges`}
+                  className="min-w-[200px] flex-1 bg-white dark:bg-zinc-800/80 border border-emerald-200/50 dark:border-emerald-700/30 rounded-xl px-3 py-2.5 flex flex-col hover:border-emerald-400 dark:hover:border-emerald-500/50 hover:shadow-md transition-all"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    {challenge.clubs?.logo_url ? (
+                      <img 
+                        src={challenge.clubs.logo_url} 
+                        alt={challenge.clubs.name}
+                        className="w-6 h-6 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-800/50 flex items-center justify-center">
+                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                          {challenge.clubs?.name?.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+                    <span className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 truncate">
+                      {challenge.clubs?.name}
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-1 truncate">
+                    {challenge.title}
+                  </p>
+                  <div className="flex items-center gap-2 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    <Zap className="w-3 h-3" />
+                    {challenge.challenge_type === 'distance' || challenge.challenge_type === 'corrida' 
+                      ? `${challenge.target_value} km` 
+                      : `Pace ${challenge.target_value} min/km`
+                    }
+                  </div>
                 </Link>
               ))}
             </div>
