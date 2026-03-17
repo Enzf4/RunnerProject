@@ -141,6 +141,7 @@ export function ClubDetailsPage() {
       setInviteRunnerSearching(true)
       const excludedIds = [
         club.admin_id,
+        currentUser?.id,
         ...members.map(m => m.id),
         ...pendingMembers.map(m => m.id)
       ].filter(Boolean)
@@ -159,7 +160,7 @@ export function ClubDetailsPage() {
       setInviteRunnerResults(filtered)
     }, 350)
     return () => clearTimeout(timer)
-  }, [inviteRunnerSearch, club, members, pendingMembers])
+  }, [inviteRunnerSearch, club, currentUser?.id, members, pendingMembers])
 
   const handleJoin = async () => {
     if (!currentUser) return
@@ -239,6 +240,11 @@ export function ClubDetailsPage() {
         }
         userIdToInvite = profile.id
       }
+      if (userIdToInvite === currentUser?.id) {
+        toast.error('Você não pode se convidar para o clube.')
+        setInviting(false)
+        return
+      }
       await inviteUserIdToDb(userIdToInvite)
       toast.success('Convite enviado!')
       setInviteUserId('')
@@ -250,6 +256,10 @@ export function ClubDetailsPage() {
   }
 
   const handleInviteRunner = async (runner) => {
+    if (runner.id === currentUser?.id) {
+      toast.error('Você não pode se convidar para o clube.')
+      return
+    }
     setInviting(true)
     try {
       await inviteUserIdToDb(runner.id)
