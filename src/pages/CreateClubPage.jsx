@@ -13,6 +13,7 @@ export function CreateClubPage() {
   const [description, setDescription] = useState('')
   const [cidade, setCidade] = useState('')
   const [regras, setRegras] = useState('')
+  const [isPublic, setIsPublic] = useState(true)
   const [logoFile, setLogoFile] = useState(null)
   const [logoPreview, setLogoPreview] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -42,6 +43,7 @@ export function CreateClubPage() {
           description,
           cidade,
           regras,
+          is_public: isPublic,
           admin_id: user.id
         }])
         .select()
@@ -135,6 +137,38 @@ export function CreateClubPage() {
               onChange={setCidade}
               placeholder="Ex: São Paulo - SP"
             />
+          </div>
+
+          <div className="space-y-3">
+            <Label className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold ml-1 uppercase tracking-wider flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5" /> Privacidade
+            </Label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setIsPublic(true)}
+                className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all ${
+                  isPublic 
+                    ? 'border-pastel-lavender dark:border-purple-500 bg-purple-50 dark:bg-purple-500/10' 
+                    : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600'
+                }`}
+              >
+                <span className={`text-sm font-bold ${isPublic ? 'text-purple-700 dark:text-purple-400' : 'text-zinc-700 dark:text-zinc-300'}`}>Público</span>
+                <span className="text-[10px] text-zinc-500 text-center mt-1">Qualquer um pode entrar</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPublic(false)}
+                className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all ${
+                  !isPublic 
+                    ? 'border-pastel-lavender dark:border-purple-500 bg-purple-50 dark:bg-purple-500/10' 
+                    : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600'
+                }`}
+              >
+                <span className={`text-sm font-bold ${!isPublic ? 'text-purple-700 dark:text-purple-400' : 'text-zinc-700 dark:text-zinc-300'}`}>Privado</span>
+                <span className="text-[10px] text-zinc-500 text-center mt-1">Requer aprovação</span>
+              </button>
+            </div>
           </div>
           
           <div className="space-y-1.5">

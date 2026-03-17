@@ -309,9 +309,15 @@ export function ProfilePage() {
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-bold text-zinc-900 dark:text-white truncate">{profile.name || 'Corredor'}</h2>
             <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 truncate">{profile.cidade || 'Nenhuma cidade'}</p>
-            <div className="flex items-center gap-1.5 mt-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 px-2.5 py-1 rounded-lg border border-zinc-100 dark:border-zinc-800 w-fit">
-              <Mail className="w-3.5 h-3.5" />
-              <span className="truncate">{user.email}</span>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 px-2.5 py-1 rounded-lg border border-zinc-100 dark:border-zinc-800 w-fit">
+                <Mail className="w-3.5 h-3.5" />
+                <span className="truncate">{user.email}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 px-2.5 py-1 rounded-lg border border-zinc-100 dark:border-zinc-800 w-fit max-w-full">
+                <span className="text-zinc-400 dark:text-zinc-500">#</span>
+                <span className="truncate font-mono" title={user.id}>{user.id}</span>
+              </div>
             </div>
           </div>
         </div>

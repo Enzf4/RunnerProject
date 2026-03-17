@@ -3,10 +3,14 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { Users, ChevronRight, Search, PlusCircle, Star, Crown, Check, MapPin } from 'lucide-react'
 import { CitySelect } from '../components/CitySelect'
+import { useToast } from '../components/Toast'
 
 export function ClubsPage() {
+  const { toast } = useToast()
   const [clubs, setClubs] = useState([])
   const [myClubs, setMyClubs] = useState([])
+  const [myInvites, setMyInvites] = useState([])
+  const [acceptingInvite, setAcceptingInvite] = useState(false)
   const [userId, setUserId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -20,21 +24,34 @@ export function ClubsPage() {
       if (!user) return
       setUserId(user.id)
 
-      // Clubs the user is a member of
+      // Clubs the user is a member or invited to
       const { data: memberData } = await supabase
         .from('club_members')
         .select(`
+          status,
           clubs (
             id,
             name,
             logo_url,
             description,
-            admin_id
+            admin_id,
+            cidade
           )
         `)
         .eq('user_id', user.id)
 
-      const memberClubs = memberData?.map(m => m.clubs).filter(Boolean) || []
+      const memberClubs = []
+      const invites = []
+      memberData?.forEach(m => {
+        if (!m.clubs) return
+        if (m.status === 'invited') {
+          invites.push(m.clubs)
+        } else if (m.status === 'active' || !m.status) {
+          memberClubs.push(m.clubs)
+        }
+      })
+      
+      setMyInvites(invites)
 
       // Clubs the user created (admin)
       const { data: adminClubs } = await supabase
@@ -90,6 +107,30 @@ export function ClubsPage() {
     return () => clearTimeout(delay)
   }, [search, cityFilter, fetchClubs])
 
+  const handleAcceptInvite = async (clubId) => {
+    setAcceptingInvite(true)
+    try {
+      const { error } = await supabase
+        .from('club_members')
+        .update({ status: 'active' })
+        .match({ club_id: clubId, user_id: userId })
+      
+      if (error) throw error
+
+      const acceptedClub = myInvites.find(c => c.id === clubId)
+      if (acceptedClub) {
+        setMyClubs(prev => [...prev, acceptedClub])
+        setMyInvites(prev => prev.filter(c => c.id !== clubId))
+      }
+      toast.success('Convite aceito! Você entrou no clube.')
+    } catch (error) {
+      console.error('Erro ao aceitar convite:', error)
+      toast.error('Erro ao aceitar convite. Tente novamente.')
+    } finally {
+      setAcceptingInvite(false)
+    }
+  }
+
   const ClubCard = ({ club, showBadge = false }) => (
     <Link 
       key={club.id} 
@@ -133,6 +174,33 @@ export function ClubsPage() {
         <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">Clubes</h1>
         <p className="text-zinc-400 dark:text-zinc-500 mt-1 text-sm font-medium">Encontre comunidades de corrida na sua cidade.</p>
       </header>
+
+      {/* Pending Invites Section */}
+      {myInvites.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-6 h-6 rounded-lg bg-orange-50 dark:bg-orange-900/40 flex items-center justify-center border border-orange-100/50 dark:border-orange-900/30">
+              <Star className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
+            </div>
+            <h2 className="text-sm font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Convites Pendentes</h2>
+            <span className="text-[10px] font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/50 px-2 py-0.5 rounded-full">{myInvites.length}</span>
+          </div>
+          <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
+            {myInvites.map((club) => (
+              <div key={club.id} className="flex flex-col gap-3 bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200/50 dark:border-orange-900/30 rounded-3xl p-5">
+                <ClubCard club={club} />
+                <button
+                  onClick={() => handleAcceptInvite(club.id)}
+                  disabled={acceptingInvite}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold py-2.5 rounded-xl shadow-sm transition-all"
+                >
+                  {acceptingInvite ? 'Aceitando...' : 'Aceitar Convite'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* My Clubs Section */}
       {myClubs.length > 0 && (

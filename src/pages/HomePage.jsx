@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { Timer, MapPin, Users, ChevronRight, UserCircle, Compass, Trophy, ArrowRight, PlusCircle, Search, Zap } from 'lucide-react'
+import { Timer, MapPin, Users, ChevronRight, UserCircle, Compass, Trophy, ArrowRight, PlusCircle, Search, Zap, Target, Gift } from 'lucide-react'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { BorderBeam } from '@/components/ui/border-beam'
 import { fetchWithAuth } from '../lib/api'
@@ -25,8 +25,11 @@ function getGreeting() {
 
 export function HomePage() {
   const [profile, setProfile] = useState(null)
+  const [userId, setUserId] = useState(null)
   const [recentClubs, setRecentClubs] = useState([])
+  const [myClubs, setMyClubs] = useState([])
   const [myClubCount, setMyClubCount] = useState(0)
+  const [myRanks, setMyRanks] = useState([])
   const [runnerCount, setRunnerCount] = useState(0)
   const [isStravaConnected, setIsStravaConnected] = useState(true) // assume true to prevent flash
   const [recentActivities, setRecentActivities] = useState([])
@@ -37,6 +40,7 @@ export function HomePage() {
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
+        setUserId(user.id)
         const [profileResponse, stravaResponse] = await Promise.all([
           supabase.from('profiles').select('pace_medio, cidade, name, photo_url').eq('id', user.id).single(),
           supabase.from('user_strava_tokens').select('user_id').eq('user_id', user.id).maybeSingle()
@@ -80,30 +84,73 @@ export function HomePage() {
       setRunnerCount(runners || 0)
 
       if (user) {
-        const { count: memberCount } = await supabase
-          .from('club_members')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-
-        const { data: adminClubs } = await supabase
-          .from('clubs')
-          .select('id')
-          .eq('admin_id', user.id)
-
-        const { data: memberClubIds } = await supabase
+        const { data: memberRows } = await supabase
           .from('club_members')
           .select('club_id')
           .eq('user_id', user.id)
+          .in('status', ['active', 'invited'])
 
-        const memberIdSet = new Set(memberClubIds?.map(m => m.club_id) || [])
-        const adminOnly = adminClubs?.filter(c => !memberIdSet.has(c.id)).length || 0
-        setMyClubCount((memberCount || 0) + adminOnly)
+        const { data: adminClubs } = await supabase
+          .from('clubs')
+          .select('id, name, logo_url')
+          .eq('admin_id', user.id)
+
+        const clubIds = new Set(memberRows?.map(m => m.club_id) || [])
+        adminClubs?.forEach(c => clubIds.add(c.id))
+        setMyClubCount(clubIds.size)
+
+        if (clubIds.size > 0) {
+          const { data: clubsData } = await supabase
+            .from('clubs')
+            .select('id, name, logo_url')
+            .in('id', [...clubIds])
+          const list = clubsData || []
+          setMyClubs(list)
+        }
       }
 
       setLoading(false)
     }
     loadData()
   }, [])
+
+  // Buscar posição do usuário nos rankings dos clubes em que participa (por prêmios)
+  useEffect(() => {
+    if (!userId || myClubs.length === 0) {
+      setMyRanks([])
+      return
+    }
+
+    async function fetchRanks() {
+      const results = []
+
+      // limitar a alguns clubes para manter performático
+      for (const club of myClubs.slice(0, 3)) {
+        const { data, error } = await supabase
+          .from('vw_club_ranking')
+          .select('user_id')
+          .eq('club_id', club.id)
+          .order('total_premios', { ascending: false })
+          .order('total_premios', { ascending: false })
+
+        if (error || !data) continue
+
+        const idx = data.findIndex(r => r.user_id === userId)
+        if (idx !== -1) {
+          results.push({
+            clubId: club.id,
+            clubName: club.name,
+            position: idx + 1,
+            total: data.length
+          })
+        }
+      }
+
+      setMyRanks(results)
+    }
+
+    fetchRanks()
+  }, [userId, myClubs])
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -159,6 +206,59 @@ export function HomePage() {
           </div>
         </div>
       </header>
+
+      {/* ─── Meu lugar nos rankings ─── */}
+      {myRanks.length > 0 && (
+        <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '0.05s' }}>
+          <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm rounded-[1.6rem] p-4 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                  <Trophy className="w-4 h-4 text-amber-600 dark:text-amber-300" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                    Seu lugar nos rankings
+                  </p>
+                  <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                    Veja como você está nos clubes que participa.
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/clubs"
+                className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+              >
+                Ver clubes <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+              {myRanks.map(rank => (
+                <Link
+                  key={rank.clubId}
+                  to={`/clubs/${rank.clubId}#ranking`}
+                  className="min-w-[140px] flex-1 bg-zinc-50 dark:bg-zinc-800/70 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2.5 flex flex-col justify-between hover:border-amber-200 dark:hover:border-amber-400/50 hover:bg-amber-50/70 dark:hover:bg-amber-500/10 transition-all"
+                >
+                  <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
+                    {rank.position === 1 ? 'Top 1 do clube' : 'Posição no ranking'}
+                  </p>
+                  <div className="flex items-baseline gap-1 mb-1.5">
+                    <span className="text-xl font-black text-amber-600 dark:text-amber-400">
+                      #{rank.position}
+                    </span>
+                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      de {rank.total}
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                    {rank.clubName}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── Motivational Marquee ─── */}
       <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '0.05s' }}>
@@ -290,6 +390,60 @@ export function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* ─── Acesso rápido (Desafios, Ranking, Prêmios) — só quando tem clubes ─── */}
+      {myClubs.length > 0 && (
+        <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '0.18s' }}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">Acesso rápido</h2>
+            <Link to="/clubs" className="text-xs font-bold text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors flex items-center gap-0.5">
+              Ver clubes <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {myClubs.map((club) => (
+              <div
+                key={club.id}
+                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-500/30 transition-all"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 overflow-hidden flex-shrink-0 flex items-center justify-center border border-emerald-100/50 dark:border-emerald-500/20">
+                    {club.logo_url ? (
+                      <img src={club.logo_url} alt={club.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="font-bold text-lg text-emerald-600 dark:text-emerald-400">{club.name?.charAt(0)}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">{club.name}</p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Desafios, ranking e prêmios</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <Link
+                    to={`/clubs/${club.id}/challenges`}
+                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors"
+                  >
+                    <Target className="w-3.5 h-3.5" /> Desafios
+                  </Link>
+                  <Link
+                    to={`/clubs/${club.id}#ranking`}
+                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors"
+                  >
+                    <Trophy className="w-3.5 h-3.5" /> Ranking
+                  </Link>
+                  <Link
+                    to={`/clubs/${club.id}/rewards`}
+                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-fuchsia-50 dark:bg-fuchsia-500/10 border border-fuchsia-100 dark:border-fuchsia-500/20 text-fuchsia-700 dark:text-fuchsia-300 text-xs font-bold hover:bg-fuchsia-100 dark:hover:bg-fuchsia-500/20 transition-colors"
+                  >
+                    <Gift className="w-3.5 h-3.5" /> Prêmios
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ─── Quick Actions ─── */}
       <div className="grid grid-cols-3 gap-2.5 mb-6 animate-fade-in-up" style={{ animationDelay: '0.25s' }}>
