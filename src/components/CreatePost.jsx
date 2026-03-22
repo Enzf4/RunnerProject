@@ -37,6 +37,7 @@ export function CreatePost({ currentUser, currentProfile, challenges, onPostCrea
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [shareAfterPost, setShareAfterPost] = useState(false)
   const [showPicker, setShowPicker] = useState(false)
   const [selectedChallengeId, setSelectedChallengeId] = useState('')
   const fileInputRef = useRef(null)
@@ -87,13 +88,14 @@ export function CreatePost({ currentUser, currentProfile, challenges, onPostCrea
           : null,
       }
 
-      onPostCreated(enriched)
+      onPostCreated(enriched, { shareAfterPost })
       
       // Reset
       setCaption('')
       setFile(null)
       setPreview(null)
       setSelectedChallengeId('')
+      setShareAfterPost(false)
       toast.success('Post publicado!')
     } catch (err) {
       toast.error(err.message || 'Erro ao publicar')
@@ -184,23 +186,36 @@ export function CreatePost({ currentUser, currentProfile, challenges, onPostCrea
 
           {/* Toolbar */}
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading || !!preview}
-                className="p-2 text-fuchsia-500 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/20 rounded-full transition-colors disabled:opacity-50"
-                title="Adicionar imagem"
-              >
-                <ImageIcon className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setShowPicker(!showPicker)}
-                disabled={uploading || challenges.length === 0}
-                className="p-2 text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-full transition-colors disabled:opacity-50"
-                title="Adicionar desafio"
-              >
-                <Calendar className="w-5 h-5" />
-              </button>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading || !!preview}
+                  className="p-2 text-fuchsia-500 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/20 rounded-full transition-colors disabled:opacity-50"
+                  title="Adicionar imagem"
+                >
+                  <ImageIcon className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setShowPicker(!showPicker)}
+                  disabled={uploading || challenges.length === 0}
+                  className="p-2 text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-full transition-colors disabled:opacity-50"
+                  title="Adicionar desafio"
+                >
+                  <Calendar className="w-5 h-5" />
+                </button>
+              </div>
+
+              <label className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-600 dark:text-zinc-300 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={shareAfterPost}
+                  onChange={(e) => setShareAfterPost(e.target.checked)}
+                  disabled={uploading}
+                  className="w-4 h-4 rounded border-zinc-300 text-fuchsia-600 focus:ring-fuchsia-500"
+                />
+                Compartilhar no Instagram após publicar
+              </label>
             </div>
 
             <div className="flex items-center gap-3">

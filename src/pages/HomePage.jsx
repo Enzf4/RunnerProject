@@ -5,6 +5,7 @@ import { Timer, MapPin, Users, ChevronRight, UserCircle, Compass, Trophy, ArrowR
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { BorderBeam } from '@/components/ui/border-beam'
 import { fetchWithAuth } from '../lib/api'
+import { sharePostToInstagramStory } from '../lib/postApi'
 import { CreatePost } from '../components/CreatePost'
 import { useToast } from '../components/Toast'
 
@@ -322,7 +323,15 @@ export function HomePage() {
             currentUser={{ id: userId }}
             currentProfile={profile}
             challenges={challenges}
-            onPostCreated={() => {
+            onPostCreated={async (newPost, options = {}) => {
+              if (options.shareAfterPost) {
+                try {
+                  await sharePostToInstagramStory(newPost, profile)
+                  toast.success('Partilha iniciada com sucesso!')
+                } catch {
+                  toast.error('Não foi possível partilhar o post.')
+                }
+              }
               navigate('/feed')
             }}
           />

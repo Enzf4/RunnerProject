@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { uploadPostImage, createPost, togglePostLike, fetchFeedPosts } from '../lib/postApi'
+import { uploadPostImage, createPost, togglePostLike, fetchFeedPosts, sharePostToInstagramStory } from '../lib/postApi'
 import { useToast } from '../components/Toast'
 import { CreatePost, Avatar } from '../components/CreatePost'
 import { 
   Heart, 
   Send,
-  Calendar
+  Calendar,
+  Share2,
+  Loader2
 } from 'lucide-react'
 
 function timeAgo(dateStr) {
@@ -19,10 +21,11 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })
 }
 
-function PostCard({ post, currentUserId, onLikeToggle }) {
+function PostCard({ post, currentUserId, onLikeToggle, onShare }) {
   const [liked, setLiked] = useState(post.likedByMe)
   const [likeCount, setLikeCount] = useState(post.likeCount)
   const [liking, setLiking] = useState(false)
+  const [sharing, setSharing] = useState(false)
 
   const handleLike = async () => {
     if (liking) return
@@ -43,6 +46,21 @@ function PostCard({ post, currentUserId, onLikeToggle }) {
 
   const author = post.profiles || {}
   const authorId = post.user_id || author.id
+  const canShare = currentUserId && post.user_id === currentUserId
+
+  const handleShare = async () => {
+    if (!canShare || sharing) return
+    setSharing(true)
+    if (sharing) return
+    try {
+      await sharePostToInstagramStory(post, author)
+      onShare?.('success')
+    } catch {
+      onShare?.('error')
+    } finally {
+      setSharing(false)
+    }
+  }
 
   return (
     <article className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.6rem] p-4 shadow-clay-sm dark:shadow-none transition-all hover:shadow-md hover:border-fuchsia-200 dark:hover:border-fuchsia-500/30">
@@ -96,7 +114,7 @@ function PostCard({ post, currentUserId, onLikeToggle }) {
             </Link>
           )}
 
-          {/* Actions - Only Like */}
+          {/* Actions */}
           <div className="flex items-center gap-4">
             <button
               onClick={handleLike}
@@ -110,6 +128,16 @@ function PostCard({ post, currentUserId, onLikeToggle }) {
               <Heart className={`w-5 h-5 transition-all ${liked ? 'fill-current scale-110' : ''}`} />
               {likeCount > 0 && <span>{likeCount}</span>}
             </button>
+            {canShare && (
+              <button
+                onClick={handleShare}
+                disabled={sharing}
+                className="flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-fuchsia-500 dark:text-zinc-400 dark:hover:text-fuchsia-400 transition-all disabled:opacity-60"
+              >
+                <Share2 className="w-5 h-5" />
+                <span>{sharing ? 'Compartilhando...' : 'Compartilhar no Instagram'}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -182,8 +210,25 @@ export function FeedPage() {
     }
   }, [loadingMore, hasMore, currentUser, page])
 
-  const handlePostCreated = (newPost) => {
+  const handlePostCreated = async (newPost, options = {}) => {
     setPosts((prev) => [newPost, ...prev])
+
+    if (options.shareAfterPost) {
+      try {
+        await sharePostToInstagramStory(newPost, currentProfile)
+        toast.success('Compartilhamento iniciado com sucesso!')
+      } catch {
+        toast.error('Não foi possível compartilhar o post.')
+      }
+    }
+  }
+
+  const handleShareFeedback = (status) => {
+    if (status === 'success') {
+      toast.success('Compartilhamento iniciado com sucesso!')
+      return
+    }
+    toast.error('Não foi possível compartilhar o post.')
   }
 
   if (loading) {
@@ -243,6 +288,7 @@ export function FeedPage() {
                 post={post}
                 currentUserId={currentUser?.id}
                 onLikeToggle={() => {}}
+                onShare={handleShareFeedback}
               />
             ))}
 
