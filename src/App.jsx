@@ -14,6 +14,7 @@ import { ChallengesPage } from './pages/ChallengesPage'
 import { CreateChallengePage } from './pages/CreateChallengePage'
 import { RewardsPage } from './pages/RewardsPage'
 import { CreateRewardPage } from './pages/CreateRewardPage'
+import { FeedPage } from './pages/FeedPage'
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
         <Route path="/runners/:id" element={<RunnerProfilePage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/strava-sucesso" element={<StravaSucessoPage />} />
+        <Route path="/feed" element={<FeedPage />} />
       </Route>
     </Routes>
   )

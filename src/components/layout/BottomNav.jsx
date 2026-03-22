@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom"
-import { Home, Users, User, PlusCircle, Sun, Moon, PersonStanding } from "lucide-react"
+import { Home, Users, User, PlusCircle, Sun, Moon, PersonStanding, Newspaper } from "lucide-react"
 import { useTheme } from "../ThemeProvider"
 
 export function BottomNav() {
@@ -7,9 +7,9 @@ export function BottomNav() {
 
   const navItems = [
     { to: "/", icon: Home, label: "Início" },
+    { to: "/feed", icon: Newspaper, label: "Feed" },
     { to: "/clubs", icon: Users, label: "Clubes" },
     { to: "/runners", icon: PersonStanding, label: "Corredores" },
-    { to: "/clubs/new", icon: PlusCircle, label: "Criar" },
     { to: "/profile", icon: User, label: "Perfil" }
   ]
 

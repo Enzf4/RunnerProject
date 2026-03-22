@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { UserCircle, MapPin, Timer, Users, ArrowLeft, ChevronRight, Crown, Check } from 'lucide-react'
+import { fetchUserPosts, togglePostLike } from '../lib/postApi'
+import { UserCircle, MapPin, Timer, Users, ArrowLeft, ChevronRight, Crown, Check, Heart, Send, Loader2 } from 'lucide-react'
 
 export function RunnerProfilePage() {
   const { id } = useParams()
@@ -10,9 +11,15 @@ export function RunnerProfilePage() {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [averagePace, setAveragePace] = useState(null)
+  const [currentUserId, setCurrentUserId] = useState(null)
+  const [posts, setPosts] = useState([])
+  const [loadingPosts, setLoadingPosts] = useState(true)
 
   useEffect(() => {
     async function fetchProfile() {
+      const { data: authData } = await supabase.auth.getUser()
+      setCurrentUserId(authData?.user?.id || null)
+
       const { data, error } = await supabase
         .from('profiles')
         .select(`
@@ -41,6 +48,15 @@ export function RunnerProfilePage() {
       }
 
       setRunner(data)
+
+      try {
+        const postsData = await fetchUserPosts(id, authData?.user?.id || null, 0, 10)
+        setPosts(postsData)
+      } catch (err) {
+        console.error('Erro ao carregar posts do corredor:', err)
+      } finally {
+        setLoadingPosts(false)
+      }
 
       // Clubs from membership
       const memberClubs = data.club_members?.map(cm => ({
@@ -92,6 +108,30 @@ export function RunnerProfilePage() {
     }
     fetchProfile()
   }, [id])
+
+  const handlePostLike = async (postId) => {
+    if (!currentUserId) return
+
+    const targetPost = posts.find((post) => post.id === postId)
+    if (!targetPost) return
+
+    const wasLiked = targetPost.likedByMe
+    setPosts((prev) => prev.map((post) => (
+      post.id === postId
+        ? { ...post, likedByMe: !wasLiked, likeCount: wasLiked ? post.likeCount - 1 : post.likeCount + 1 }
+        : post
+    )))
+
+    try {
+      await togglePostLike(postId, currentUserId)
+    } catch {
+      setPosts((prev) => prev.map((post) => (
+        post.id === postId
+          ? { ...post, likedByMe: wasLiked, likeCount: wasLiked ? post.likeCount + 1 : post.likeCount - 1 }
+          : post
+      )))
+    }
+  }
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -222,6 +262,71 @@ export function RunnerProfilePage() {
                 </div>
                 <ChevronRight className="w-4 h-4 text-zinc-300 dark:text-zinc-600 flex-shrink-0" />
               </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Posts Section */}
+      <div className="mt-8">
+        <h2 className="text-xl font-extrabold tracking-tight mb-4">
+          Posts {runner.name?.split(' ')[0] ? `de ${runner.name.split(' ')[0]}` : ''}
+        </h2>
+
+        {loadingPosts ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="w-6 h-6 text-fuchsia-500 animate-spin" />
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="bg-white/60 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.6rem] p-8 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40 text-center">
+            <Send className="w-9 h-9 mx-auto text-zinc-300 dark:text-zinc-600 mb-2" />
+            <p className="text-zinc-400 dark:text-zinc-500 text-sm font-medium">
+              Este corredor ainda não publicou nenhum post.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {posts.map((post) => (
+              <article
+                key={post.id}
+                className="bg-white/70 dark:bg-zinc-800/60 backdrop-blur-sm rounded-[1.4rem] p-4 shadow-clay-sm dark:shadow-none dark:border dark:border-zinc-700/40"
+              >
+                {post.caption && (
+                  <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap mb-3">
+                    {post.caption}
+                  </p>
+                )}
+
+                {post.image_url && (
+                  <div className="mb-3 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700">
+                    <img
+                      src={post.image_url}
+                      alt="Post do corredor"
+                      className="w-full max-h-[360px] object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                    {new Date(post.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </span>
+
+                  <button
+                    onClick={() => handlePostLike(post.id)}
+                    disabled={!currentUserId}
+                    className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                      post.likedByMe
+                        ? 'text-red-500'
+                        : 'text-zinc-500 hover:text-red-400 dark:text-zinc-400 dark:hover:text-red-400'
+                    } ${!currentUserId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <Heart className={`w-5 h-5 ${post.likedByMe ? 'fill-current' : ''}`} />
+                    {post.likeCount > 0 && <span>{post.likeCount}</span>}
+                  </button>
+                </div>
+              </article>
             ))}
           </div>
         )}

@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 import { fetchWithAuth } from '../lib/api'
+import { fetchUserPosts, togglePostLike } from '../lib/postApi'
 import axios from 'axios'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, MapPin, Timer, Mail, Camera, LogOut, Save, Check, AlignLeft, Link2, Link2Off, Loader2, Activity, Calendar, Zap, Mountain, ExternalLink } from 'lucide-react'
+import { User, MapPin, Timer, Mail, Camera, LogOut, Save, Check, AlignLeft, Link2, Link2Off, Loader2, Activity, Calendar, Zap, Mountain, ExternalLink, Heart, Send, ChevronDown } from 'lucide-react'
 import { useToast } from '../components/Toast'
 import { CitySelect } from '../components/CitySelect'
 
@@ -23,6 +24,12 @@ export function ProfilePage() {
   const [stravaActivities, setStravaActivities] = useState([])
   const [loadingActivities, setLoadingActivities] = useState(false)
   const [averagePace, setAveragePace] = useState(null)
+  const [userPosts, setUserPosts] = useState([])
+  const [loadingPosts, setLoadingPosts] = useState(true)
+  const [postsPage, setPostsPage] = useState(0)
+  const [hasMorePosts, setHasMorePosts] = useState(true)
+  const [isEditCollapsed, setIsEditCollapsed] = useState(true)
+  const [isStravaCollapsed, setIsStravaCollapsed] = useState(true)
   const { toast } = useToast()
   
   const [profile, setProfile] = useState({
@@ -82,6 +89,62 @@ export function ProfilePage() {
     }
     loadProfile()
   }, [])
+
+  useEffect(() => {
+    async function loadUserPosts() {
+      if (!user) return
+      setLoadingPosts(true)
+      try {
+        const posts = await fetchUserPosts(user.id, user.id, 0, 10)
+        setUserPosts(posts)
+        setHasMorePosts(posts.length === 10)
+      } catch (err) {
+        console.error('Erro ao carregar posts:', err)
+      } finally {
+        setLoadingPosts(false)
+      }
+    }
+    loadUserPosts()
+  }, [user])
+
+  const loadMorePosts = async () => {
+    if (!user || loadingPosts) return
+    setLoadingPosts(true)
+    try {
+      const nextPage = postsPage + 1
+      const posts = await fetchUserPosts(user.id, user.id, nextPage, 10)
+      setUserPosts(prev => [...prev, ...posts])
+      setPostsPage(nextPage)
+      setHasMorePosts(posts.length === 10)
+    } catch (err) {
+      console.error('Erro ao carregar mais posts:', err)
+    } finally {
+      setLoadingPosts(false)
+    }
+  }
+
+  const handlePostLike = async (postId) => {
+    if (!user) return
+    const post = userPosts.find(p => p.id === postId)
+    if (!post) return
+    
+    const wasLiked = post.likedByMe
+    setUserPosts(prev => prev.map(p => 
+      p.id === postId 
+        ? { ...p, likedByMe: !wasLiked, likeCount: wasLiked ? p.likeCount - 1 : p.likeCount + 1 }
+        : p
+    ))
+    
+    try {
+      await togglePostLike(postId, user.id)
+    } catch (err) {
+      setUserPosts(prev => prev.map(p => 
+        p.id === postId 
+          ? { ...p, likedByMe: wasLiked, likeCount: wasLiked ? p.likeCount + 1 : p.likeCount - 1 }
+          : p
+      ))
+    }
+  }
 
   const fetchRecentActivities = async () => {
     setLoadingActivities(true)
@@ -344,7 +407,15 @@ export function ProfilePage() {
       
       {/* Edit Form */}
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 transition-all hover:shadow-md hover:border-fuchsia-200 dark:hover:border-fuchsia-500/30 mb-6 flex flex-col">
-        <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-5">Editar Informações</h3>
+        <button
+          type="button"
+          onClick={() => setIsEditCollapsed((prev) => !prev)}
+          className="w-full flex items-center justify-between text-left mb-5"
+        >
+          <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Editar Informações</h3>
+          <ChevronDown className={`w-5 h-5 text-zinc-500 transition-transform ${isEditCollapsed ? '' : 'rotate-180'}`} />
+        </button>
+        {!isEditCollapsed && (
         <form onSubmit={handleUpdate} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="name" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -424,6 +495,7 @@ export function ProfilePage() {
             </Button>
           </div>
         </form>
+        )}
       </div>
 
       {/* Strava Integration Card */}
@@ -431,7 +503,7 @@ export function ProfilePage() {
         {/* Decorative background element */}
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-[#FC4C02]/10 dark:bg-[#FC4C02]/20 rounded-full blur-3xl pointer-events-none" />
         
-        <div className="relative z-10 flex items-center mb-5">
+        <div className="relative z-10 flex items-center mb-5 justify-between">
           <div className="flex items-center gap-3">
              <div className="w-12 h-12 rounded-2xl bg-[#FC4C02]/10 flex items-center justify-center border border-[#FC4C02]/20">
               <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#FC4C02]" fill="currentColor">
@@ -448,8 +520,18 @@ export function ProfilePage() {
                </div>
             )}
            </div>
+           <button
+             type="button"
+             onClick={() => setIsStravaCollapsed((prev) => !prev)}
+             className="p-1 rounded-lg text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+             aria-label="Expandir ou recolher seção do Strava"
+           >
+             <ChevronDown className={`w-5 h-5 transition-transform ${isStravaCollapsed ? '' : 'rotate-180'}`} />
+           </button>
          </div>
-         
+
+        {!isStravaCollapsed && (
+        <>
          <p className="relative z-10 text-sm text-zinc-600 dark:text-zinc-400 font-medium mb-6">
            Conecte sua conta do Strava para sincronizar automaticamente suas atividades e validar desafios no clube.
          </p>
@@ -550,7 +632,87 @@ export function ProfilePage() {
              )}
            </div>
          )}
-       </div>
-     </div>
-   )
- }
+        </>
+        )}
+      </div>
+
+      {/* Meus Posts */}
+      <div className="mt-6">
+        <h2 className="text-xl font-bold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
+          <Send className="w-5 h-5 text-fuchsia-500" />
+          Meus Posts
+        </h2>
+        
+        {loadingPosts ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="w-6 h-6 text-fuchsia-500 animate-spin" />
+          </div>
+        ) : userPosts.length === 0 ? (
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 text-center">
+            <Send className="w-10 h-10 text-zinc-300 dark:text-zinc-600 mx-auto mb-3" />
+            <p className="text-zinc-500 dark:text-zinc-400 font-medium">Você ainda não tem posts.</p>
+            <p className="text-zinc-400 dark:text-zinc-500 text-sm mt-1">Compartilhe seu primeiro treino no feed!</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {userPosts.map((post) => (
+              <article 
+                key={post.id}
+                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[1.6rem] p-4 shadow-clay-sm dark:shadow-none transition-all hover:shadow-md hover:border-fuchsia-200 dark:hover:border-fuchsia-500/30"
+              >
+                <div className="flex gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 text-xs text-zinc-400 dark:text-zinc-500 mb-2">
+                      <span>{new Date(post.created_at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    </div>
+                    
+                    {post.caption && (
+                      <p className="text-zinc-700 dark:text-zinc-300 text-sm leading-relaxed mb-3 whitespace-pre-wrap">
+                        {post.caption}
+                      </p>
+                    )}
+
+                    {post.image_url && (
+                      <div className="mb-3 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700">
+                        <img
+                          src={post.image_url}
+                          alt="Post"
+                          className="w-full max-h-[300px] object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => handlePostLike(post.id)}
+                        className={`flex items-center gap-1.5 text-sm font-medium transition-all ${
+                          post.likedByMe 
+                            ? 'text-red-500' 
+                            : 'text-zinc-500 hover:text-red-400 dark:text-zinc-400 dark:hover:text-red-400'
+                        }`}
+                      >
+                        <Heart className={`w-5 h-5 transition-all ${post.likedByMe ? 'fill-current scale-110' : ''}`} />
+                        {post.likeCount > 0 && <span>{post.likeCount}</span>}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))}
+
+            {hasMorePosts && (
+              <button
+                onClick={loadMorePosts}
+                disabled={loadingPosts}
+                className="w-full py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 font-semibold text-sm rounded-2xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+              >
+                {loadingPosts ? 'Carregando...' : 'Mostrar mais'}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

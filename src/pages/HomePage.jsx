@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { Timer, MapPin, Users, ChevronRight, UserCircle, Compass, Trophy, ArrowRight, PlusCircle, Search, Zap, Target, Gift } from 'lucide-react'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { BorderBeam } from '@/components/ui/border-beam'
 import { fetchWithAuth } from '../lib/api'
+import { CreatePost } from '../components/CreatePost'
+import { useToast } from '../components/Toast'
 
 const motivationalPhrases = [
   "Cada quilômetro conta 🏃",
@@ -24,6 +26,7 @@ function getGreeting() {
 }
 
 export function HomePage() {
+  const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
   const [userId, setUserId] = useState(null)
   const [recentClubs, setRecentClubs] = useState([])
@@ -38,6 +41,8 @@ export function HomePage() {
   const [eligibleChallenges, setEligibleChallenges] = useState([])
   const [isPaceFromStrava, setIsPaceFromStrava] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [challenges, setChallenges] = useState([])
+  const { toast } = useToast()
   const greeting = getGreeting()
 
   useEffect(() => {
@@ -132,15 +137,22 @@ export function HomePage() {
           const list = clubsData || []
           setMyClubs(list)
 
-          // Buscar desafios ativos dos clubes do usuário
+          // Buscar desafios dos clubes do usuário
           const { data: challengesData } = await supabase
+            .from('challenges')
+            .select('id, title')
+            .in('club_id', [...clubIds])
+          setChallenges(challengesData || [])
+
+          // Buscar desafios ativos dos clubes do usuário
+          const { data: activeChallengesData } = await supabase
             .from('challenges')
             .select('*, clubs(name, logo_url)')
             .in('club_id', [...clubIds])
             .lte('start_date', new Date().toISOString())
             .gte('end_date', new Date().toISOString())
           
-          if (challengesData && hasStrava) {
+          if (activeChallengesData && hasStrava) {
             // Buscar desafios já resgatados pelo usuário
             const { data: redeemedChallenges } = await supabase
               .from('challenge_participants')
@@ -162,7 +174,7 @@ export function HomePage() {
                 }
                 if (Array.isArray(acts)) {
                   // Verificar quais desafios podem ser completados (e ainda não foram resgatados)
-                  const eligible = challengesData.filter(challenge => {
+                  const eligible = activeChallengesData.filter(challenge => {
                     // Pular se já foi resgatado
                     if (redeemedChallengeIds.has(challenge.id)) return false
                     
@@ -294,6 +306,28 @@ export function HomePage() {
           </div>
         </div>
       </header>
+  
+      {/* ─── Create Post Card ─── */}
+      {userId && (
+        <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '0.02s' }}>
+          <div className="flex justify-end mb-3">
+            <Link
+              to="/feed"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-fuchsia-700 dark:text-fuchsia-300 bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-200 dark:border-fuchsia-800/40 px-3 py-1.5 rounded-full hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900/30 transition-colors"
+            >
+              Ver Feed <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+          <CreatePost
+            currentUser={{ id: userId }}
+            currentProfile={profile}
+            challenges={challenges}
+            onPostCreated={() => {
+              navigate('/feed')
+            }}
+          />
+        </div>
+      )}
 
       {/* Convites pendentes – indicador discreto */}
       {inviteCount > 0 && (
