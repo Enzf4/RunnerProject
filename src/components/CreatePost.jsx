@@ -214,7 +214,7 @@ export function CreatePost({ currentUser, currentProfile, challenges, onPostCrea
                   disabled={uploading}
                   className="w-4 h-4 rounded border-zinc-300 text-fuchsia-600 focus:ring-fuchsia-500"
                 />
-                Compartilhar no Instagram após publicar
+                Compartilhar após publicar
               </label>
             </div>
 

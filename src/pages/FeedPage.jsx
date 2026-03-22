@@ -135,7 +135,7 @@ function PostCard({ post, currentUserId, onLikeToggle, onShare }) {
                 className="flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-fuchsia-500 dark:text-zinc-400 dark:hover:text-fuchsia-400 transition-all disabled:opacity-60"
               >
                 <Share2 className="w-5 h-5" />
-                <span>{sharing ? 'Compartilhando...' : 'Compartilhar no Instagram'}</span>
+                <span>{sharing ? 'Compartilhando...' : 'Compartilhar'}</span>
               </button>
             )}
           </div>
