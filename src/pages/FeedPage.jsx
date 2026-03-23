@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { uploadPostImage, createPost, togglePostLike, fetchFeedPosts, sharePostToInstagramStory } from '../lib/postApi'
+import { uploadPostImage, createPost, togglePostLike, fetchFeedPosts, sharePostToInstagramStory, fetchComments, addComment, deleteComment } from '../lib/postApi'
 import { useToast } from '../components/Toast'
 import { CreatePost, Avatar } from '../components/CreatePost'
 import { 
@@ -9,10 +9,13 @@ import {
   Send,
   Calendar,
   Share2,
-  Loader2
+  Loader2,
+  MessageCircle,
+  Trash2
 } from 'lucide-react'
 
 function timeAgo(dateStr) {
+  if (!dateStr) return ''
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000
   if (diff < 60) return 'agora'
   if (diff < 3600) return `${Math.floor(diff / 60)}m`
@@ -26,6 +29,12 @@ function PostCard({ post, currentUserId, onLikeToggle, onShare }) {
   const [likeCount, setLikeCount] = useState(post.likeCount)
   const [liking, setLiking] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [showComments, setShowComments] = useState(false)
+  const [comments, setComments] = useState([])
+  const [loadingComments, setLoadingComments] = useState(false)
+  const [newComment, setNewComment] = useState('')
+  const [submittingComment, setSubmittingComment] = useState(false)
+  const commentInputRef = useRef(null)
 
   const handleLike = async () => {
     if (liking) return
@@ -41,6 +50,90 @@ function PostCard({ post, currentUserId, onLikeToggle, onShare }) {
       setLikeCount((c) => (wasLiked ? c + 1 : c - 1))
     } finally {
       setLiking(false)
+    }
+  }
+
+  const loadComments = async () => {
+    setLoadingComments(true)
+    try {
+      const data = await fetchComments(post.id)
+      const commentsArray = Array.isArray(data) ? data : []
+      
+      if (commentsArray.length > 0) {
+        const userIds = [...new Set(commentsArray.map(c => c.user_id).filter(Boolean))]
+        if (userIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, name, photo_url')
+            .in('id', userIds)
+          
+          const profilesMap = {}
+          if (profilesData) {
+            profilesData.forEach(p => {
+              profilesMap[p.id] = p
+            })
+          }
+          
+          const enrichedComments = commentsArray.map(c => ({
+            ...c,
+            profiles: profilesMap[c.user_id] || c.profiles || {}
+          }))
+          setComments(enrichedComments)
+        } else {
+          setComments(commentsArray)
+        }
+      } else {
+        setComments([])
+      }
+    } catch (err) {
+      console.error('Erro ao carregar comentários:', err)
+      setComments([])
+    } finally {
+      setLoadingComments(false)
+    }
+  }
+
+  const handleToggleComments = async () => {
+    if (!showComments && comments.length === 0) {
+      await loadComments()
+    }
+    setShowComments(!showComments)
+  }
+
+  const handleSubmitComment = async (e) => {
+    e.preventDefault()
+    if (!newComment.trim() || submittingComment) return
+    
+    setSubmittingComment(true)
+    try {
+      const addedComment = await addComment(post.id, currentUserId, newComment.trim())
+      
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('name, photo_url')
+        .eq('id', currentUserId)
+        .single()
+      
+      const commentWithProfile = {
+        ...addedComment,
+        profiles: profileData || { name: 'Você', photo_url: null }
+      }
+      
+      setComments((prev) => [...prev, commentWithProfile])
+      setNewComment('')
+    } catch (err) {
+      console.error('Erro ao adicionar comentário:', err)
+    } finally {
+      setSubmittingComment(false)
+    }
+  }
+
+  const handleDeleteComment = async (commentId) => {
+    try {
+      await deleteComment(post.id, commentId)
+      setComments((prev) => prev.filter((c) => c.id !== commentId))
+    } catch (err) {
+      console.error('Erro ao excluir comentário:', err)
     }
   }
 
@@ -128,6 +221,15 @@ function PostCard({ post, currentUserId, onLikeToggle, onShare }) {
               <Heart className={`w-5 h-5 transition-all ${liked ? 'fill-current scale-110' : ''}`} />
               {likeCount > 0 && <span>{likeCount}</span>}
             </button>
+            
+            <button
+              onClick={handleToggleComments}
+              className="flex items-center gap-1.5 text-sm font-medium text-zinc-500 hover:text-fuchsia-500 dark:text-zinc-400 dark:hover:text-fuchsia-400 transition-all"
+            >
+              <MessageCircle className="w-5 h-5" />
+              <span>Comentários</span>
+            </button>
+            
             {canShare && (
               <button
                 onClick={handleShare}
@@ -139,6 +241,86 @@ function PostCard({ post, currentUserId, onLikeToggle, onShare }) {
               </button>
             )}
           </div>
+
+          {/* Comments Section */}
+          {showComments && (
+            <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+              {/* Comment Input */}
+              <form onSubmit={handleSubmitComment} className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Escreva um comentário..."
+                  className="flex-1 px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full focus:outline-none focus:ring-2 focus:ring-fuchsia-500 dark:text-white placeholder-zinc-400"
+                  disabled={submittingComment}
+                />
+                <button
+                  type="submit"
+                  disabled={!newComment.trim() || submittingComment}
+                  className="px-4 py-2 bg-fuchsia-600 text-white text-sm font-medium rounded-full hover:bg-fuchsia-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {submittingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enviar'}
+                </button>
+              </form>
+
+              {/* Comments List */}
+              {loadingComments ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+                </div>
+              ) : comments.length > 0 ? (
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {comments.map((comment) => {
+                    const commentAuthor = comment.profiles || {}
+                    const isOwner = comment.user_id === currentUserId
+                    const isPostOwner = post.user_id === currentUserId
+                    const canDelete = isOwner || isPostOwner
+                    return (
+                      <div key={comment.id} className="flex gap-2 items-start">
+                        <Link to={`/runners/${comment.user_id}`}>
+                          <Avatar 
+                            src={commentAuthor.photo_url} 
+                            name={commentAuthor.name || 'U'} 
+                            size="sm" 
+                          />
+                        </Link>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Link 
+                              to={`/runners/${comment.user_id}`}
+                              className="text-sm font-semibold text-zinc-900 dark:text-white hover:underline"
+                            >
+                              {commentAuthor.name || 'Usuário'}
+                            </Link>
+                            <span className="text-xs text-zinc-400">
+                              {timeAgo(comment.created_at)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-zinc-700 dark:text-zinc-300 mt-0.5 break-words">
+                            {comment.content}
+                          </p>
+                        </div>
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="p-1 text-zinc-400 hover:text-red-500 transition-colors"
+                            title="Excluir comentário"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center py-2">
+                  Nenhum comentário ainda. Seja o primeiro a comentar!
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </article>

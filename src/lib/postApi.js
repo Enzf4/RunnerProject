@@ -305,6 +305,59 @@ export async function sharePostToInstagramStory(post, authorProfile = null) {
   }
 }
 
+// ── Comentários: Buscar todos os comentários de um Post ───────────────────────
+
+export async function fetchComments(postId) {
+  const url = `${API_BASE_URL}/api/Post/${postId}/comments`
+  const response = await fetch(url)
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+    throw new Error(error.error || `Erro ${response.status}`)
+  }
+
+  return response.json()
+}
+
+// ── Comentários: Adicionar um comentário ───────────────────────────────────────
+
+export async function addComment(postId, userId, content) {
+  const url = `${API_BASE_URL}/api/Post/${postId}/comment`
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userId: userId,
+      content: content
+    })
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+    throw new Error(errorData.error || "Erro ao comentar.")
+  }
+
+  return response.json()
+}
+
+// ── Comentários: Excluir um comentário ─────────────────────────────────────────
+
+export async function deleteComment(postId, commentId) {
+  const url = `${API_BASE_URL}/api/Post/${postId}/comment/${commentId}`
+  
+  const response = await fetch(url, {
+    method: 'DELETE'
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+    throw new Error(error.error || `Erro ${response.status}`)
+  }
+
+  return response.json()
+}
+
 // ── Feed: Buscar posts do Supabase diretamente ────────────────────────────────
 
 export async function fetchFeedPosts(currentUserId, page = 0, pageSize = 10) {
