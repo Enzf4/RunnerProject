@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 import { fetchWithAuth } from '../lib/api'
 import { fetchUserPosts, togglePostLike } from '../lib/postApi'
+import { useUserStreak } from '@/hooks/useUserStreak'
+import { StreakBadge } from '@/components/StreakBadge'
 import axios from 'axios'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,6 +16,8 @@ import { CitySelect } from '../components/CitySelect'
 export function ProfilePage() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState(null)
+  const { streakData, loading: streakLoading } = useUserStreak(userId)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -62,6 +66,7 @@ export function ProfilePage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUser(user)
+        setUserId(user.id)
         
         // Load profile and strava connection in parallel
         const [profileResponse, stravaResponse] = await Promise.all([
@@ -363,7 +368,10 @@ export function ProfilePage() {
             )}
           </label>
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-bold text-zinc-900 dark:text-white truncate">{profile.name || 'Corredor'}</h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-white truncate">{profile.name || 'Corredor'}</h2>
+              <StreakBadge currentStreak={streakData.currentStreak} loading={streakLoading} />
+            </div>
             <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 truncate">{profile.cidade || 'Nenhuma cidade'}</p>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 px-2.5 py-1 rounded-lg border border-zinc-100 dark:border-zinc-800 w-fit">

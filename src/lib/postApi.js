@@ -358,6 +358,33 @@ export async function deleteComment(postId, commentId) {
   return response.json()
 }
 
+// ── Post: Excluir um post ──────────────────────────────────────────────────────
+
+export async function deletePost(postId, userId) {
+  const url = `${API_BASE_URL}/api/Post/${postId}`
+
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId }),
+  })
+
+  if (response.ok) {
+    return { success: true }
+  }
+
+  if (response.status === 403) {
+    throw new Error('Você não tem permissão para excluir este post.')
+  }
+
+  if (response.status === 404) {
+    throw new Error('Postagem não encontrada.')
+  }
+
+  const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+  throw new Error(errorData.error || `Erro ${response.status}`)
+}
+
 // ── Feed: Buscar posts do Supabase diretamente ────────────────────────────────
 
 export async function fetchFeedPosts(currentUserId, page = 0, pageSize = 10) {
@@ -406,6 +433,89 @@ export async function fetchFeedPosts(currentUserId, page = 0, pageSize = 10) {
 
   return posts.map((p) => ({
     ...p,
+    likeCount: likeCounts[p.id] || 0,
+    likedByMe: likedByMe.has(p.id),
+  }))
+}
+
+// ── Feed Filtrado: Buscar posts da rede do usuário via API C# ─────────────────
+
+export async function fetchFilteredFeed(userId) {
+  const url = `${API_BASE_URL}/api/Post/feed/${userId}`
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+    throw new Error(errorData.error || `Erro ${response.status}`)
+  }
+
+  const rawPosts = await response.json()
+
+  if (!rawPosts || rawPosts.length === 0) return []
+
+  // Map camelCase from C# API to snake_case expected by PostCard
+  const posts = rawPosts.map((p) => ({
+    id: p.id,
+    user_id: p.userId,
+    image_url: p.imageUrl || null,
+    caption: p.caption || null,
+    challenge_id: p.challengeId || null,
+    activity_id: p.activityId || null,
+    club_id: p.clubId || null,
+    created_at: p.createdAt,
+  }))
+
+  // Enrich with profiles, challenges, and likes from Supabase
+  const userIds = [...new Set(posts.map((p) => p.user_id).filter(Boolean))]
+  const challengeIds = [...new Set(posts.map((p) => p.challenge_id).filter(Boolean))]
+  const postIds = posts.map((p) => p.id)
+
+  const queries = [
+    // Profiles
+    userIds.length > 0
+      ? supabase.from('profiles').select('id, name, photo_url, cidade').in('id', userIds)
+      : Promise.resolve({ data: [] }),
+    // Challenges
+    challengeIds.length > 0
+      ? supabase.from('challenges').select('id, title, club_id').in('id', challengeIds)
+      : Promise.resolve({ data: [] }),
+    // All likes for these posts
+    supabase
+      .from('post_likes')
+      .select('post_id')
+      .in('post_id', postIds.length ? postIds : ['00000000-0000-0000-0000-000000000000']),
+    // Current user's likes
+    supabase
+      .from('post_likes')
+      .select('post_id')
+      .eq('user_id', userId)
+      .in('post_id', postIds.length ? postIds : ['00000000-0000-0000-0000-000000000000']),
+  ]
+
+  const [profilesRes, challengesRes, likesRes, myLikesRes] = await Promise.all(queries)
+
+  const profilesMap = {}
+  ;(profilesRes.data || []).forEach((p) => { profilesMap[p.id] = p })
+
+  const challengesMap = {}
+  ;(challengesRes.data || []).forEach((c) => { challengesMap[c.id] = c })
+
+  const likeCounts = {}
+  ;(likesRes.data || []).forEach((l) => {
+    likeCounts[l.post_id] = (likeCounts[l.post_id] || 0) + 1
+  })
+
+  const likedByMe = new Set()
+  ;(myLikesRes.data || []).forEach((l) => likedByMe.add(l.post_id))
+
+  return posts.map((p) => ({
+    ...p,
+    profiles: profilesMap[p.user_id] || null,
+    challenges: challengesMap[p.challenge_id] || null,
     likeCount: likeCounts[p.id] || 0,
     likedByMe: likedByMe.has(p.id),
   }))

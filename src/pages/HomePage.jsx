@@ -8,6 +8,8 @@ import { fetchWithAuth } from '../lib/api'
 import { sharePostToInstagramStory } from '../lib/postApi'
 import { CreatePost } from '../components/CreatePost'
 import { useToast } from '../components/Toast'
+import { useUserStreak } from '@/hooks/useUserStreak'
+import { StreakBadge } from '@/components/StreakBadge'
 
 const motivationalPhrases = [
   "Cada quilômetro conta 🏃",
@@ -44,6 +46,7 @@ export function HomePage() {
   const [loading, setLoading] = useState(true)
   const [challenges, setChallenges] = useState([])
   const { toast } = useToast()
+  const { streakData, loading: streakLoading } = useUserStreak(userId)
   const greeting = getGreeting()
 
   useEffect(() => {
@@ -304,6 +307,9 @@ export function HomePage() {
             <h1 className="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
               Este é seu painel de corrida
             </h1>
+          </div>
+          <div className="flex-shrink-0">
+            <StreakBadge currentStreak={streakData.currentStreak} loading={streakLoading} />
           </div>
         </div>
       </header>

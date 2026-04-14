@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { fetchUserPosts, togglePostLike } from '../lib/postApi'
+import { useUserStreak } from '@/hooks/useUserStreak'
+import { StreakBadge } from '@/components/StreakBadge'
 import { UserCircle, MapPin, Timer, Users, ArrowLeft, ChevronRight, Crown, Check, Heart, Send, Loader2 } from 'lucide-react'
 
 export function RunnerProfilePage() {
   const { id } = useParams()
+  const { streakData, loading: streakLoading } = useUserStreak(id)
   const [runner, setRunner] = useState(null)
   const [clubs, setClubs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -172,7 +175,10 @@ export function RunnerProfilePage() {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-extrabold truncate">{runner.name || 'Corredor'}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-extrabold truncate">{runner.name || 'Corredor'}</h1>
+              <StreakBadge currentStreak={streakData.currentStreak} loading={streakLoading} />
+            </div>
             {runner.cidade && (
               <p className="text-sm text-zinc-400 dark:text-zinc-500 font-medium flex items-center gap-1 mt-0.5">
                 <MapPin className="w-3.5 h-3.5" /> {runner.cidade}

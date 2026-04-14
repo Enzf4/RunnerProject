@@ -3,10 +3,7 @@
   "mcp": {
     "supabase": {
       "type": "remote",
-      "url": "https://mcp.supabase.com/mcp",
-      "headers": {
-        "Authorization": "Bearer sbp_b05fdfc3d4d392ddaedad71abb3e1cf8a4d4e9fe"
-      },
+      "url": "https://mcp.supabase.com/mcp?project_ref=dcvmglbhuoahxvtsrjoz",
       "enabled": true
     },
     "sequential-thinking": {
