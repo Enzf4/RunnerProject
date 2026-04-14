@@ -511,7 +511,7 @@ export function HomePage() {
               <Timer className="w-4 h-4 text-fuchsia-800 dark:text-fuchsia-300" />
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold text-fuchsia-800/70 dark:text-fuchsia-300/70 uppercase tracking-wider">Pace Médio</span>
+              <span className="text-[10px] font-bold text-fuchsia-800/70 dark:text-fuchsia-300/70 uppercase tracking-wider">Pace 3KM</span>
               {isPaceFromStrava && (
                 <span className="flex items-center gap-0.5 text-[9px] font-semibold bg-[#FC4C02]/20 text-[#FC4C02] px-1.5 py-0.5 rounded" title="Calculado automaticamente pelo Strava">
                   <svg viewBox="0 0 24 24" className="w-3 h-3" fill="currentColor">
