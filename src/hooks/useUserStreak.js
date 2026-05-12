@@ -26,6 +26,12 @@ export function useUserStreak(userId) {
         setLoading(true)
         setError(null)
 
+        // Mocking behavior as requested
+        setStreakData({
+          currentStreak: 1,
+          lastActivityDate: new Date().toISOString()
+        })
+        /*
         const response = await fetch(`${API_BASE_URL}/api/Streak/${userId}`)
 
         if (!response.ok) {
@@ -37,6 +43,7 @@ export function useUserStreak(userId) {
           currentStreak: data.currentStreak,
           lastActivityDate: data.lastActivityDate
         })
+        */
       } catch (err) {
         setError(err.message)
       } finally {
